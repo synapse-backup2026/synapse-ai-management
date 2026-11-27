@@ -1,3 +1,4 @@
+import {memberResponsibility} from '../../../../lib/organizational-logins';
 import { z } from "zod";
 import { hasDataAccess } from "../../../../lib/auth-policy";
 import { canDeleteData } from "../../../../lib/deletion-policy";
@@ -121,9 +122,9 @@ async function access() {
   };
 }
 const forbidden = () => json({ error: "دسترسی به این عملیات مجاز نیست." }, 403);
-const indexedStaff = "SELECT m.email AS id, m.name FROM staff_members m JOIN staff_accounts a ON a.member_id=m.email WHERE m.active=1 AND NOT EXISTS (SELECT 1 FROM laboratory_members l WHERE l.member_id=m.email)";
+const indexedStaff = "SELECT m.email AS id, m.name, a.username FROM staff_members m JOIN staff_accounts a ON a.member_id=m.email WHERE m.active=1 AND NOT EXISTS (SELECT 1 FROM laboratory_members l WHERE l.member_id=m.email)";
 const activeLabs = "SELECT id, name FROM laboratories WHERE status='active'";
-type Target = { id: string; name: string };
+type Target = { id: string; name: string; username?: string };
 
 async function resolveDestination(value: string) {
   if (!value) return { label: "", person: "", lab: "" };
@@ -134,7 +135,8 @@ async function resolveDestination(value: string) {
   }
   if (value.startsWith("staff:")) {
     const staff = await db().prepare(indexedStaff + " AND m.email=?").bind(value.slice(6)).first<Target>();
-    if (staff) return { label: staff.name, person: staff.id, lab: "" };
+    const label = staff && memberResponsibility(staff);
+    if (staff && label) return { label, person: staff.id, lab: "" };
   }
   return null;
 }
@@ -164,7 +166,7 @@ export async function GET(request: Request) {
       destinations: [
         { group: "انبار", key: "warehouse", name: warehouse },
         ...labs.results.map((lab) => ({ group: "آزمایشگاه‌ها", key: `lab:${lab.id}`, name: lab.name })),
-        ...staff.results.map((member) => ({ group: "مسئولان", key: `staff:${member.id}`, name: member.name })),
+        ...staff.results.filter(memberResponsibility).map((member) => ({ group: "مسئولان", key: `staff:${member.id}`, name: memberResponsibility(member)! })),
       ],
     });
   } catch {

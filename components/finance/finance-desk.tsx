@@ -1,4 +1,5 @@
 'use client';
+import {memberResponsibility} from '../../lib/organizational-logins';
 import {FinancialDataTable} from './financial-ui';
 import CustomerReceipts from './customer-receipts';
 import {bankWorkbookCSV} from '../../lib/bank-workbook';
@@ -32,7 +33,7 @@ function ask(title:string,body:any,fields:any[]=[]){if(body.action==='payable_cr
 const text=(name:string,label:string,value:any='',required=false,type='text')=>({name,label,value,required,type});
 const choose=(name:string,label:string,options:any[],required=true)=>({name,label,type:'select',options,required});
 const documentOptions=docs.filter((d:any)=>d.status!=='cancelled').map((d:any)=>({value:d.id,label:d.number+' · '+d.payload.client+' · '+documentKinds[d.kind]}));
-const staffOptions=data.members.map((m:any)=>({value:m.email,label:m.name}));
+const staffOptions=data.members.filter(memberResponsibility).map((m:any)=>({value:m.email,label:memberResponsibility(m)!}));
 const newDoc=(kind:string)=>{setError('');setSuccess('');setEdit({kind,payload:{client:'',contact:'',reference:'',project_id:'',lines:[blankLine()],discount:0,tax_bps:data.settings.default_tax_bps,execution_min:0,due:'',installments:[],payment_terms:'',scope:'',terms:'',source_url:'',note:'',amendment_reason:''}});setSelected('')};
 const patch=(key:string,value:any)=>setEdit({...edit,payload:{...edit.payload,[key]:value}});
 const patchLine=(id:string,key:string,value:any)=>patch('lines',edit.payload.lines.map((l:any)=>l.id===id?{...l,[key]:value}:l));
