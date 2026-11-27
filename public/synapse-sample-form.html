@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action 'none'; connect-src 'self'">
+<title>فرم اطلاعات نمونه‌های پژوهشی | SYNAPSE</title>
+<style>
+:root{font:16px/1.55 Tahoma,Arial,sans-serif;color:#191919;background:#f5f5f5}
+*{box-sizing:border-box}
+body{margin:0}
+main{max-width:900px;margin:auto;padding:12px}
+.shell,.archive{background:#fff;border:1px solid #e1e1e1;border-radius:18px;padding:clamp(14px,3vw,25px);box-shadow:0 5px 24px #00000006}
+header,.row,.actions,.archiveTools,.record{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+h1,h2,h3,p{margin:0}
+.logo{font:800 24px/1.2 Arial;letter-spacing:.035em}
+h1{font-size:clamp(17px,4vw,24px);margin-top:5px}
+h2{font-size:18px;margin:0 0 10px}h3{font-size:15px}
+.sub,.hint,small{color:#595959;font-size:.83rem}
+.badge,.count{background:#eee;border-radius:30px;padding:3px 10px;font-size:.77rem;white-space:nowrap}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:8px 0;margin:11px 0 13px;border-block:1px solid #ececec;list-style:none}
+.steps button{display:grid;place-items:center;gap:3px;background:white;border-color:transparent;width:100%;height:100%;font-size:.8rem;padding:6px 4px;line-height:1.4;color:#252525}
+.steps button:disabled{opacity:1;color:#595959}
+.steps button[aria-current]{background:#eee;font-weight:bold}
+.steps b{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#eee}
+.steps [aria-current] b{background:#111;color:white}
+.grid,.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}
+.wide{grid-column:1/-1}
+label{display:grid;gap:4px;min-width:0;font-size:.88rem;color:#414141}
+input,select,textarea,button{font:inherit;color:inherit;min-width:0}
+label :is(input:not([type=radio],[type=checkbox]),select,textarea),.archiveTools input,.record select{width:100%;border:1px solid #d5d5d5;border-radius:10px;background:#fdfdfd;padding:7px 10px;min-height:39px}
+textarea{resize:vertical}
+input[type=datetime-local]{display:block;min-width:0;max-width:100%}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid #555;outline-offset:2px}
+button{min-height:36px;border-radius:9px;border:1px solid #d6d6d6;background:#fff;padding:6px 12px;cursor:pointer}
+button:disabled{opacity:.48;cursor:default}.primary{background:#171717;color:#fff;border-color:#171717}
+.actions{margin-top:12px;justify-content:flex-end}
+.actions .primary{min-width:min(100%,160px)}
+.sample,.summary,.review{border:1px solid #e1e1e1;border-radius:13px;padding:10px 12px;margin-top:8px;overflow-wrap:anywhere}
+.sample>summary{cursor:pointer;font-weight:bold;margin-bottom:0}
+.sample[open]>summary{margin-bottom:8px}
+.sample .remove{margin-top:8px;font-size:.8rem;min-height:30px}
+.measure,.summary{background:#f2f2f2}
+.measure{border:0;border-radius:10px;min-inline-size:0;margin:0;padding:8px}
+.measure legend{padding:0 4px;color:#252525;font-size:.88rem;font-weight:bold}
+.measure output{display:block;font-size:.83rem;font-weight:600}
+.sample-box{border:1px solid #dedede;border-radius:10px;padding:8px;min-inline-size:0;margin:0}
+.sample-box legend{font-size:.88rem;font-weight:bold;padding:0 4px}
+.sample-box .hint{margin:3px 0 6px}
+.repeat-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:end;margin:5px 0}
+.repeat-row button,.sample-box button{min-height:32px;font-size:.8rem}
+.techniques,.date-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.date-fields{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:6px}
+.techniques label{display:flex;align-items:baseline;gap:4px}
+.choice{border:1px solid #e4e4e4;border-radius:10px;margin:0;min-inline-size:0;padding:5px 9px}
+.choice legend{font-size:.88rem}.choice label,.check{display:flex;gap:7px;align-items:baseline;padding:3px 0}
+input:is([type=radio],[type=checkbox]){accent-color:#171717;flex:none}
+.check{margin-top:9px}
+dl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin:5px 0;gap:3px 10px;font-size:.88rem}
+dd{margin:0;text-align:end;overflow-wrap:anywhere}
+.summary ol{border-top:1px solid #ddd;margin:7px 0 0;padding:6px 21px 0 0}
+.summary li+li{margin-top:4px}.summary li p{font-size:.83rem;color:#555}
+#message:empty{display:none}#message{color:#862a2a;margin:7px 0}
+.archive{margin-top:9px}.archive>summary{cursor:pointer;font-weight:bold}
+.archiveTools{margin:9px 0 6px}.archiveTools input{flex:1 1 220px;width:auto}
+.record{border-top:1px solid #e8e8e8;padding:7px 0;overflow-wrap:anywhere}
+.record .row{justify-content:flex-end;flex:0 1 auto}
+.record select{width:auto;max-width:100%;font-size:.8rem}
+.archive h3{margin:8px 0 2px}.archiveTools button,.record button{font-size:.82rem}
+@media(max-width:550px){.grid{grid-template-columns:minmax(0,1fr)} .pair{column-gap:6px}
+ label :is(input,select,textarea){font-size:16px} .record .row{justify-content:flex-start}}
+.calendar{max-width:330px;margin-top:6px;background:#fff;border:1px solid #ddd;border-radius:8px;padding:6px}
+.calendar-nav{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:4px}
+.calendar-nav select{font:inherit;min-width:0}
+.calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center;margin-top:4px}
+.calendar-days button{padding:2px;min-height:32px}
+.calendar-days button[aria-pressed=true]{background:#171717;color:#fff}
+</style>
+</head>
+<body>
+<main>
+<section class="shell" aria-labelledby="title">
+<header><div><div class="logo" lang="en">SYNAPSE</div><h1 id="title">فرم اطلاعات نمونه‌های پژوهشی</h1><p class="sub" lang="en">Sample Information Form</p></div><span class="badge" id="previewBadge">پیش‌نمایش</span><a href="/sample-intake" id="returnLink" hidden>بازگشت به پذیرش نمونه</a></header>
+<ol class="steps" id="steps" aria-label="مراحل فرم"></ol>
+<p id="message" role="alert"></p>
+<form id="wizard" novalidate></form>
+</section>
+<details class="archive" id="archive"><summary><span id="archiveTitle">پرونده‌های آزمایشی این مرورگر</span> <span class="count" id="archiveCount">۰</span></summary>
+<p class="hint" id="archiveHelp">برای بررسی فهرست داخلی. ذخیره و انتخاب مقصد فقط در همین مرورگر انجام می‌شود. برای آزمایش از دادهٔ نمونه استفاده کنید.</p>
+<div class="archiveTools"><input type="search" id="search" placeholder="نام پژوهشگر یا شماره فاکتور" aria-label="جست‌وجوی پرونده‌ها"><button type="button" id="newSheet">برگهٔ جدید</button></div>
+<p id="archiveStatus" class="hint" role="status"></p>
+<div id="records"></div>
+</details>
+</main>
+<script>
+'use strict';
+const types=['بافت / ارگان','سرم','پلاسما','خون کامل','سلول / لیزات','RNA / DNA','پروتئین','محیط کشت','دارو / ماده آزمایشی','ادرار','سایر'];
+const species=['انتخاب کنید','رت (Rat)','موش (Mouse)','خرگوش','انسان (کدگذاری‌شده)','رده سلولی','سایر / نامشخص'];
+const units=['میلی‌گرم (mg)','گرم (g)','میکروگرم (µg)','میلی‌لیتر (mL)','میکرولیتر (µL)','تعداد سلول','قطعه / عدد'];
+const conditions=['منجمد (Frozen)','تازه (Fresh)','فیکس‌شده (Fixed)','استخراج / فرآوری‌شده','سایر / نیازمند بررسی'];
+const deliveries=['ارسال با پیک','ارسال پستی','تحویل حضوری','هنوز مشخص نیست'];
+const temperatures=['دمای محیط','یخچالی، حدود ۲ تا ۸ درجه سانتی‌گراد','منجمد','سایر / نیازمند هماهنگی'];
+const assays=['مطالعات حیوانی','بافت‌شناسی / پاتولوژی','پاتولوژی مولکولی (بیان ژن، وسترن و غیره)','الایزا (ELISA)','تست‌های سلولی','میکروب‌شناسی','سایر آزمون‌ها'];
+const otherType=types.length-1;
+const sampleName=s=>s.type===otherType?s.name.trim()||types[s.type]:types[s.type];
+const markerModes=['انتخاب کنید','همراه نمونه ارائه می‌شود','پژوهشگر تعیین می‌کند','نیاز به مشاوره'];
+const months=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+const jalali=new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn',{year:'numeric',month:'numeric',day:'numeric',timeZone:'UTC'});
+const dateParts=date=>Object.fromEntries(jalali.formatToParts(date).filter(p=>['year','month','day'].includes(p.type)).map(p=>[p.type,Number(p.value)]));
+const currentYear=dateParts(new Date()).year;
+const faDigits=value=>String(value).replace(/[0-9]/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
+function monthDays(year,month){
+ if(month<7)return 31;
+ if(month<12)return 30;
+ for(let day=18;day<=22;day++){
+  const next=Date.UTC(year+622,2,day);
+  const parts=dateParts(new Date(next));
+  if(parts.year===year+1&&parts.month===1&&parts.day===1)return dateParts(new Date(next-86400000)).day;
+ }
+ return 29;
+}
+const destinations=['انبار','آزمایشگاه مطالعات حیوانی','آزمایشگاه بافت‌شناسی','آزمایشگاه سلولی و مولکولی','آزمایشگاه پروتئینی و بیوشیمی','آزمایشگاه میکروبیولوژی','سایر خدمات آزمایشگاهی'];
+const confirmText='تأیید می‌کنم اطلاعات نمونه‌ها صحیح است و مجوزها و رضایت‌های لازم، در صورت شمول، اخذ شده‌اند.';
+const stageNames=['مشخصات پژوهشگر','اطلاعات نمونه‌ها','شرایط و تأیید'];
+const live=/^https?:$/.test(location.protocol)&&location.pathname==='/synapse-sample-form.html';
+const endpoint='/api/sample-intake/researcher';
+let currentRevision=0, saving=false;
+const storageKey='synapse-sample-form-preview-v1';
+const oldAssays=[1,2,3,4,5,6];
+const form=document.querySelector('#wizard');
+const message=document.querySelector('#message');
+const search=document.querySelector('#search');
+const status=document.querySelector('#archiveStatus');
+const numFmt=new Intl.NumberFormat('fa-IR',{maximumSignificantDigits:15});
+const fa=value=>numFmt.format(value);
+const digits=value=>String(value).replace(/[۰-۹٠-٩]/g,d=>String('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩'.indexOf(d)%10));
+const numeric=value=>digits(value).trim().replace('٫','.');
+const safe=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sheetId=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
+function newSample(){return {type:0,name:'',species:0,originNotes:'',code:'',groups:[''],markerMode:0,markers:'',count:'',amount:'',unit:0,condition:0,container:'',year:'',month:'',day:'',hour:'',minute:'',assays:[],otherTechnique:'',notes:''}}
+function newSheet(){return {name:'',org:'',mobile:'',invoice:'',email:'',samples:[newSample()],delivery:0,temp:1,transport:'',biosafety:'',confirmed:false}}
+let data=newSheet(), stage=0, furthest=0, review=false, openSample=0, page=0, currentId=sheetId();
+let records=[];
+if(!live)try{
+ const saved=JSON.parse(localStorage.getItem(storageKey)||'[]');
+ if(Array.isArray(saved))records=saved.map(record=>({...record,catalogVersion:2,sheet:{...record.sheet,samples:record.sheet.samples.map(sample=>{
+  const date=sample.collected&&new Date(sample.collected+'Z');
+  const d=date&&Number.isFinite(date.getTime())?dateParts(date):null;
+  const choices=Array.isArray(sample.assays)?sample.assays:[record.sheet.assay];
+  return {...newSample(),...(d?{year:String(d.year),month:String(d.month),day:String(d.day),hour:sample.collected.slice(11,13),minute:sample.collected.slice(14,16)}:{}),
+   ...sample,assays:record.catalogVersion===2?choices:choices.map(index=>oldAssays[index]).filter(Number.isInteger)};
+ })}}));
+}catch{}
+const positive=value=>/^\d+(?:\.\d+)?$/.test(numeric(value))&&Number(numeric(value))>0&&Number.isFinite(Number(numeric(value)));
+const countValue=value=>/^\d+$/.test(numeric(value))&&Number.isSafeInteger(Number(numeric(value)))?Number(numeric(value)):0;
+const totalContainers=sheet=>sheet.samples.reduce((sum,s)=>sum+countValue(s.count),0);
+const validMobile=value=>/^(?:09|\+989|00989)\d{9}$/.test(digits(value).replace(/[\s()-]/g,''));
+const validContact=sheet=>!!sheet.name.trim()&&validMobile(sheet.mobile)&&!!sheet.invoice.trim()&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sheet.email.trim());
+const validCollection=s=>/^\d{4}$/.test(s.year)&&Number(s.year)>=1200&&Number(s.year)<=currentYear+1&&
+ /^(?:[1-9]|1[0-2])$/.test(s.month)&&/^[1-9]\d?$/.test(s.day)&&Number(s.day)<=monthDays(Number(s.year),Number(s.month));
+const validSample=s=>types[s.type]&&(s.type!==otherType||s.name.trim())&&s.species>0&&species[s.species]&&(s.species!==species.length-1||s.originNotes.trim())&&validCollection(s)&&validQuantity(s)&&units[s.unit]!==undefined;
+const canReview=()=>validContact(data)&&data.samples.every(validSample)&&data.confirmed;
+const input=(object,key,label,attrs='',extra='')=>`<label class="${extra}">${label}<input name="${key}" value="${safe(object[key])}" ${attrs}></label>`;
+const textarea=(object,key,label,placeholder,extra='')=>`<label class="${extra}">${label}<textarea name="${key}" rows="2" placeholder="${safe(placeholder)}">${safe(object[key])}</textarea></label>`;
+const select=(object,key,label,options)=>`<label>${label}<select name="${key}">${options.map((v,i)=>`<option value="${i}"${object[key]===i?' selected':''}>${safe(v)}</option>`).join('')}</select></label>`;
+const radio=(key,label,options)=>`<fieldset class="choice"><legend>${label}</legend>${options.map((v,i)=>`<label><input type="radio" name="${key}" value="${i}"${data[key]===i?' checked':''}>${safe(v)}</label>`).join('')}</fieldset>`;
+const totalText=s=>validQuantity(s)?`${fa(countValue(s.count))} × ${fa(Number(numeric(s.amount)))} = ${fa(countValue(s.count)*Number(numeric(s.amount)))} ${units[s.unit]}`:'';
+function validQuantity(s){return countValue(s.count)>0&&positive(s.amount)&&Number.isFinite(countValue(s.count)*Number(numeric(s.amount)))}
+function contact(){return `<h2 data-heading tabindex="-1">۱. اطلاعات پژوهشگر و سفارش</h2><div class="grid">
+ ${input(data,'name','نام و نام خانوادگی پژوهشگر *','required autocomplete="name" placeholder="نام پژوهشگر"','wide')}
+ <div class="pair wide">
+ ${input(data,'mobile','شماره موبایل *','required type="tel" dir="ltr" autocomplete="tel" placeholder="۰۹…"')}
+ ${input(data,'email','ایمیل *','required type="email" dir="ltr" autocomplete="email" placeholder="researcher@example.com"')}
+ </div>
+ ${input(data,'invoice','شماره فاکتور / سفارش *','required type="text" dir="auto" placeholder="مثلاً ۰۵۸۷۶"','wide')}
+ ${input(data,'org','دانشگاه / مرکز تحقیقاتی / سازمان (اختیاری)','autocomplete="organization" placeholder="نام سازمان"','wide')}
+ </div><div class="actions"><button class="primary">ادامه</button></div>`}
+function calendarDays(year,month,selected){
+ const target=year*10000+month*100+1;
+ let low=Date.UTC(year+621,2,18)/86400000,high=Date.UTC(year+622,2,24)/86400000;
+ while(low<=high){
+  const mid=Math.floor((low+high)/2),date=new Date(mid*86400000),parts=dateParts(date);
+  const key=parts.year*10000+parts.month*100+parts.day;
+  if(key===target){
+   const offset=(date.getUTCDay()+1)%7;
+   return ['ش','ی','د','س','چ','پ','ج'].map(v=>'<small>'+v+'</small>').join('')+'<span></span>'.repeat(offset)+Array.from({length:monthDays(year,month)},(_,i)=>'<button type="button" data-action="calendar-day" data-day="'+(i+1)+'" aria-pressed="'+(String(i+1)===selected)+'">'+faDigits(i+1)+'</button>').join('');
+  }
+  if(key<target)low=mid+1;else high=mid-1;
+ }
+ return '';
+}
+function sampleDate(s){
+ const today=dateParts(new Date()),year=Number(s.year)||today.year,month=Number(s.month)||today.month;
+ const label=validCollection(s)?faDigits(s.year+'/'+s.month.padStart(2,'0')+'/'+s.day.padStart(2,'0')):'انتخاب تاریخ برداشت';
+ return `<fieldset class="sample-box wide collection"><legend>تاریخ برداشت (هجری شمسی) *</legend>
+ <button type="button" name="collection" data-action="calendar-toggle" aria-expanded="false">${label}</button>
+ <div class="calendar" hidden data-year="${year}" data-month="${month}">
+ <div class="calendar-nav">
+ <button type="button" data-action="calendar-prev" aria-label="ماه قبل">‹</button>
+ <select data-calendar-month aria-label="ماه">${months.map((title,i)=>`<option value="${i+1}"${i+1===month?' selected':''}>${title}</option>`).join('')}</select>
+ <select data-calendar-year aria-label="سال">${Array.from({length:currentYear-1198},(_,i)=>currentYear+1-i).map(v=>`<option value="${v}"${v===year?' selected':''}>${faDigits(v)}</option>`).join('')}</select>
+ <button type="button" data-action="calendar-next" aria-label="ماه بعد">›</button></div>
+ <div class="calendar-days">${calendarDays(year,month,s.day)}</div></div></fieldset>`;
+}
+function sampleCard(s,i){return `<details class="sample" data-sample="${i}" ${openSample===i?'open':''}>
+ <summary>نمونه شماره ${fa(i+1)} · ${safe(sampleName(s))}</summary>
+ <div class="grid">
+ ${select(s,'type','نوع نمونه *',types)}
+ <div data-other-type ${s.type===otherType?'':'hidden'}>${input(s,'name','نوع دیگر نمونه *','placeholder="نوع نمونه را بنویسید"')}</div>
+ ${select(s,'species','گونه / منشأ زیستی *',species)}
+ ${input(s,'code','شناسه نمونه یا گروه (اختیاری)','placeholder="مثلاً Ctrl-01 / T1 / Batch A"')}
+ <div class="wide" data-origin ${s.species===species.length-1?'':'hidden'}>${input(s,'originNotes','توضیح گونه یا منشأ زیستی *','placeholder="گونه، منشأ یا نامشخص"')}</div>
+ <fieldset class="sample-box"><legend>گروه‌های پژوهش</legend>
+ ${s.groups.map((group,i)=>`<div class="repeat-row"><label>نام گروه ${fa(i+1)}<input data-group="${i}" value="${safe(group)}" placeholder="مثلاً کنترل یا بیمار"></label>${i>0?`<button type="button" data-action="remove-group" data-index="${i}" aria-label="حذف گروه ${fa(i+1)}">حذف</button>`:''}</div>`).join('')}
+ <button type="button" data-action="add-group">+ افزودن گروه</button></fieldset>
+ <fieldset class="sample-box"><legend>مارکرها یا موارد قابل اندازه‌گیری (اختیاری)</legend>
+ <p class="hint">شناسه برای کدگذاری نمونه است. نام مارکرها را اینجا وارد کنید.</p>
+ ${select(s,'markerMode','نحوه تعیین مارکرها',markerModes)}
+ ${input(s,'markers','نام مارکرها یا موارد قابل اندازه‌گیری','placeholder="نام مارکرها"')}</fieldset>
+ <fieldset class="measure wide"><legend>مقدار دقیق نمونه</legend><div class="pair">
+ ${input(s,'count','تعداد ظروف / نمونه‌ها *','required inputmode="numeric" placeholder="مثلاً 12"','wide')}
+ ${input(s,'amount','مقدار هر نمونه *','required inputmode="decimal" placeholder="مثلاً 250"')}
+ ${select(s,'unit','واحد اندازه‌گیری *',units)}
+ <output class="wide" aria-live="polite">${totalText(s)}</output>
+ </div></fieldset>
+ ${select(s,'condition','وضعیت / نوع نگهداری نمونه',conditions)}
+ ${input(s,'container','نوع ظرف / فیکساتیو / محیط نگهدارنده','placeholder="مثلاً میکروتیوب، بافر، فرمالین"')}
+ ${sampleDate(s)}
+ <fieldset class="sample-box wide"><legend>آزمون‌ها و تکنیک‌های همین نمونه (اختیاری)</legend><div class="techniques">
+ ${assays.map((title,index)=>`<label><input type="checkbox" data-assay="${index}" ${s.assays.includes(index)?'checked':''}>${title}</label>`).join('')}
+ </div>${input(s,'otherTechnique','نام تکنیک‌های دیگر (اختیاری)','placeholder="در صورت نیاز، نام تکنیک‌ها را بنویسید"')}</fieldset>
+ ${textarea(s,'notes','توضیحات علمی و شرایط خاص','شرح گروه‌ها، روش تهیه، شناسه‌ها و ویژگی‌های نمونه','wide')}
+ </div>
+ ${data.samples.length>1?`<button type="button" class="remove" data-action="remove" aria-label="حذف نمونه شماره ${fa(i+1)}">حذف این نمونه</button>`:''}
+ </details>`}
+function samples(){return `<div class="row"><h2 data-heading tabindex="-1">۲. مشخصات دقیق نمونه‌ها</h2><span class="count">${fa(data.samples.length)} ردیف</span></div>
+ <p class="hint">برای هر نوع نمونه یک کارت بسازید و آزمون‌های مربوط به همان نمونه را در کارت خودش تیک بزنید.</p>
+ ${data.samples.map(sampleCard).join('')}
+ <div class="actions"><button type="button" data-action="add">+ افزودن نمونه دیگر</button></div>
+ <section class="summary"><div class="row"><h3>خلاصه نمونه‌های ثبت‌شده</h3><strong id="containers">${fa(totalContainers(data))} نمونه / ظرف</strong></div><p class="hint">${fa(data.samples.length)} نوع یا ردیف نمونه ثبت شده است.</p></section>
+ <div class="actions"><button type="button" data-action="back">مرحله قبل</button><button class="primary">ادامه</button></div>`}
+function summary(sheet){return `<section class="summary"><h3>خلاصه برگه محقق</h3>
+ <dl><dt>پژوهشگر</dt><dd>${safe(sheet.name||'وارد نشده')}</dd><dt>شماره فاکتور</dt><dd><bdi>${safe(sheet.invoice||'وارد نشده')}</bdi></dd>
+ <dt>تعداد ردیف‌های نمونه</dt><dd>${fa(sheet.samples.length)}</dd><dt>تعداد کل ظروف / نمونه‌ها</dt><dd>${fa(totalContainers(sheet))}</dd></dl>
+ <ol>${sheet.samples.map(s=>`<li><bdi>${safe(sampleName(s))}</bdi><p>${validQuantity(s)?totalText(s):'—'} · ${types[s.type]}</p></li>`).join('')}</ol></section>`}
+function details(sheet){return `<dl><dt>سازمان</dt><dd>${safe(sheet.org||'—')}</dd><dt>موبایل</dt><dd><bdi>${safe(sheet.mobile)}</bdi></dd><dt>ایمیل</dt><dd><bdi>${safe(sheet.email||'—')}</bdi></dd>
+ <dt>روش تحویل</dt><dd>${deliveries[sheet.delivery]}</dd><dt>شرایط دمایی</dt><dd>${temperatures[sheet.temp]}</dd><dt>روش و مدت حمل</dt><dd>${safe(sheet.transport||'—')}</dd><dt>ملاحظات و مجوزها</dt><dd>${safe(sheet.biosafety||'—')}</dd></dl>
+ ${sheet.samples.map((s,i)=>`<article class="sample"><h3>نمونه شماره ${fa(i+1)} · <bdi>${safe(sampleName(s))}</bdi></h3>
+ <dl><dt>منشأ زیستی</dt><dd>${s.species?species[s.species]:'—'}${s.species===species.length-1&&s.originNotes?' · '+safe(s.originNotes):''}</dd><dt>شناسه نمونه یا گروه</dt><dd><bdi>${safe(s.code||'—')}</bdi></dd>
+ <dt>گروه‌ها</dt><dd>${safe(s.groups.map(g=>g.trim()).filter(Boolean).join('، ')||'—')}</dd>
+ <dt>نحوه تعیین مارکر</dt><dd>${s.markerMode?markerModes[s.markerMode]:'—'}</dd><dt>مارکرها</dt><dd>${safe(s.markers||'—')}</dd>
+ <dt>آزمون‌ها و تکنیک‌ها</dt><dd>${safe([...s.assays.map(i=>assays[i]),s.otherTechnique].filter(Boolean).join('، ')||'—')}</dd>
+ <dt>وضعیت نگهداری</dt><dd>${conditions[s.condition]}</dd><dt>ظرف یا محیط نگهدارنده</dt><dd>${safe(s.container||'—')}</dd><dt>تاریخ برداشت (شمسی)</dt><dd><bdi>${validCollection(s)?faDigits(s.year+'/'+s.month.padStart(2,'0')+'/'+s.day.padStart(2,'0')+(s.hour&&s.minute?' '+s.hour+':'+s.minute:'')):'—'}</bdi></dd><dt>توضیحات علمی</dt><dd>${safe(s.notes||'—')}</dd></dl></article>`).join('')}`}
+function conditionsStep(){return `<h2 data-heading tabindex="-1">۳. شرایط حمل، آزمون و تأیید پژوهشگر</h2>${review?`
+ <section class="review"><h3>مرور نهایی</h3><p class="hint">${live?'نسخهٔ آمادهٔ ذخیره در سامانه':'پیش‌نمایش برگهٔ محقق'}</p>${summary(data)}${details(data)}<p class="hint">${confirmText}</p></section>
+ <div class="actions"><button type="button" data-action="back">بازگشت و ویرایش نمونه‌ها</button><button type="button" data-action="save" class="primary">${live?'ذخیرهٔ برگه در سامانه':'ذخیره آزمایشی در این مرورگر'}</button></div>`:`
+ <div class="grid">${radio('delivery','روش تحویل نمونه‌ها',deliveries)}${radio('temp','شرایط دمایی حمل',temperatures)}
+ <p class="hint wide">انتخاب این بخش صرفاً ثبت شرایط محموله است؛ شرایط مناسب باید مطابق الزامات همان آزمون تعیین شود.</p>
+ ${input(data,'transport','روش و مدت حمل','placeholder="مثلاً مدت تقریبی حمل و روش بسته‌بندی"')}
+ ${textarea(data,'biosafety','ملاحظات ایمنی زیستی و مجوزهای مرتبط','اطلاعات مرتبط، در صورت وجود','wide')}</div>
+ ${summary(data)}
+ <label class="check"><input type="checkbox" name="confirmed" ${data.confirmed?'checked':''}>${confirmText}</label>
+ <div class="actions"><button type="button" data-action="back">بازگشت و ویرایش نمونه‌ها</button><button id="review" class="primary" ${canReview()?'':'disabled'}>بررسی نهایی برگه نمونه</button></div>`}`}
+function render(focus=false){
+ document.querySelector('#steps').innerHTML=stageNames.map((name,i)=>`<li><button type="button" data-stage="${i}" ${stage===i?'aria-current="step"':''} ${i>furthest?'disabled':''}><b>${fa(i+1)}</b>${name}</button></li>`).join('');
+ form.innerHTML=[contact,samples,conditionsStep][stage]();
+ if(focus){const heading=form.querySelector('[data-heading]');heading.focus({preventScroll:true});window.scrollTo(0,0)}
+}
+function go(i){stage=i;review=false;message.textContent='';render(true)}
+function updateField(e){
+ const field=e.target;
+ if(!field.name&&!field.matches('[data-group],[data-assay]'))return;
+ const card=field.closest('[data-sample]');
+ const target=card?data.samples[Number(card.dataset.sample)]:data;
+ if(field.matches('[data-group]')){
+  target.groups[Number(field.dataset.group)]=field.value;
+  data.confirmed=false;return;
+ }
+ if(field.matches('[data-assay]')){
+  const index=Number(field.dataset.assay);
+  target.assays=field.checked?[...target.assays,index]:target.assays.filter(value=>value!==index);
+  data.confirmed=false;return;
+ }
+ if(!Object.hasOwn(target,field.name))return;
+ const dateKeys=['year','month','day','hour','minute'];
+ target[field.name]=field.type==='checkbox'?field.checked:(field.type==='radio'||field.tagName==='SELECT')&&!dateKeys.includes(field.name)?Number(field.value):field.value;
+ if(field.name!=='confirmed')data.confirmed=false;
+ if(card){
+  if(field.name==='species')card.querySelector('[data-origin]').hidden=target.species!==species.length-1;
+  if(field.name==='type')card.querySelector('[data-other-type]').hidden=target.type!==otherType;
+  if(field.name==='type'||field.name==='name')card.querySelector('summary').textContent='نمونه شماره '+fa(Number(card.dataset.sample)+1)+' · '+sampleName(target);
+  card.querySelector('output').textContent=totalText(target);
+  document.querySelector('#containers').textContent=fa(totalContainers(data))+' نمونه / ظرف';
+ }else{
+  const checkbox=form.querySelector('input[name=confirmed]');
+  if(checkbox){checkbox.checked=data.confirmed;document.querySelector('#review').disabled=!canReview()}
+ }
+ message.textContent='';
+}
+function refreshCalendar(cal){
+ cal.dataset.year=cal.querySelector('[data-calendar-year]').value;
+ cal.dataset.month=cal.querySelector('[data-calendar-month]').value;
+ const s=data.samples[Number(cal.closest('[data-sample]').dataset.sample)];
+ cal.querySelector('.calendar-days').innerHTML=calendarDays(Number(cal.dataset.year),Number(cal.dataset.month),s.year===cal.dataset.year&&s.month===cal.dataset.month?s.day:'');
+}
+form.addEventListener('change',e=>{const cal=e.target.closest('.calendar');if(cal)refreshCalendar(cal)});
+form.addEventListener('input',updateField);
+form.addEventListener('submit',e=>{
+ e.preventDefault();
+ if(stage===0&&!validContact(data)){
+  message.textContent='نام پژوهشگر، شماره موبایل ایران، ایمیل معتبر و شماره فاکتور را وارد کنید.';
+  form.elements[!data.name.trim()?'name':!validMobile(data.mobile)?'mobile':!data.email.trim()||!form.elements.email.validity.valid?'email':'invoice'].focus();return;
+ }
+ if(stage===1){
+  const invalid=data.samples.findIndex(s=>!validSample(s));
+  if(invalid!==-1){
+   const card=form.querySelector('[data-sample="'+invalid+'"]');card.open=true;
+   message.textContent='نوع، منشأ زیستی، مقدار و تاریخ برداشت نمونه شماره '+fa(invalid+1)+' را کامل کنید.';
+   const bad=data.samples[invalid];
+   const key=bad.type===otherType&&!bad.name.trim()?'name':!bad.species?'species':bad.species===species.length-1&&!bad.originNotes.trim()?'originNotes':!countValue(bad.count)?'count':!validQuantity(bad)?'amount':'collection';
+   card.querySelector('[name="'+key+'"]').focus();return;
+  }
+ }
+ if(stage<2){furthest=Math.max(furthest,stage+1);go(stage+1)}
+ else if(canReview()){review=true;render(true)}
+});
+document.querySelector('#steps').addEventListener('click',e=>{
+ const button=e.target.closest('button[data-stage]');
+ if(!button)return;
+ const next=Number(button.dataset.stage);
+ if(next>0&&!validContact(data)){go(0);message.textContent='ابتدا مشخصات پژوهشگر را کامل کنید.';return}
+ if(next===2&&!data.samples.every(validSample)){go(1);message.textContent='ابتدا اطلاعات نمونه‌ها را کامل کنید.';return}
+ go(next);
+});
+function persist(next){
+ try{localStorage.setItem(storageKey,JSON.stringify(next));records=next;return true}
+ catch{status.textContent='ذخیرهٔ آزمایشی در این مرورگر در دسترس نیست.';return false}
+}
+form.addEventListener('click',async e=>{
+ const button=e.target.closest('button[data-action]');
+ if(!button)return;
+ switch(button.dataset.action){
+  case 'calendar-toggle': {
+   const cal=button.nextElementSibling;
+   cal.hidden=!cal.hidden;button.setAttribute('aria-expanded',String(!cal.hidden));break;
+  }
+  case 'calendar-prev':
+  case 'calendar-next': {
+   const cal=button.closest('.calendar');
+   const offset=button.dataset.action==='calendar-next'?1:-1;
+   const index=Number(cal.dataset.month)-1+offset;
+   const year=Number(cal.dataset.year)+Math.floor(index/12);
+   if(year<1200||year>currentYear+1)break;
+   cal.querySelector('[data-calendar-year]').value=String(year);
+   cal.querySelector('[data-calendar-month]').value=String((index+12)%12+1);
+   refreshCalendar(cal);break;
+  }
+  case 'calendar-day': {
+   const cal=button.closest('.calendar'),s=data.samples[Number(cal.closest('[data-sample]').dataset.sample)];
+   Object.assign(s,{year:cal.dataset.year,month:cal.dataset.month,day:button.dataset.day,hour:'',minute:''});
+   data.confirmed=false;message.textContent='';refreshCalendar(cal);
+   const trigger=cal.previousElementSibling;
+   trigger.textContent=faDigits(s.year+'/'+s.month.padStart(2,'0')+'/'+s.day.padStart(2,'0'));
+   cal.hidden=true;trigger.setAttribute('aria-expanded','false');trigger.focus();break;
+  }
+  case 'add-group':
+  case 'remove-group': {
+   openSample=Number(button.closest('[data-sample]').dataset.sample);
+   const groups=data.samples[openSample].groups;
+   if(button.dataset.action==='add-group')groups.push('');else groups.splice(Number(button.dataset.index),1);
+   data.confirmed=false;render();
+   form.querySelector('[data-sample="'+openSample+'"] [data-group="'+(groups.length-1)+'"]').focus();
+   break;
+  }
+  case 'back': go(stage-1);break;
+  case 'add':
+   data.samples.push(newSample());data.confirmed=false;openSample=data.samples.length-1;render();
+   form.querySelector('[data-sample="'+openSample+'"] select').focus();break;
+  case 'remove':
+   if(data.samples.length<2)return;
+   {const i=Number(button.closest('[data-sample]').dataset.sample);
+    data.samples.splice(i,1);data.confirmed=false;openSample=Math.min(i,data.samples.length-1);render();
+    form.querySelector('[data-sample="'+openSample+'"] summary').focus();}
+   break;
+  case 'save':
+   if(!review||!canReview()||saving)return;
+   {const existing=records.find(record=>record.id===currentId);
+    const record={id:currentId,catalogVersion:2,sheet:JSON.parse(JSON.stringify(data)),destination:existing?.destination||'',updatedAt:new Date().toISOString()};
+    saving=true;button.disabled=true;
+    try{
+     if(live){
+      const saved=await send({action:'save',id:record.id,revision:currentRevision,sheet:record.sheet});
+      if(currentId===saved.id)currentRevision=saved.revision;
+     }else if(!persist([record,...records.filter(entry=>entry.id!==record.id)])){
+      throw new Error('ذخیرهٔ آزمایشی در این مرورگر در دسترس نیست.');
+     }
+     document.querySelector('#archive').open=true;
+     search.value='';page=0;drawArchive();
+     status.textContent=live?'برگه در سامانه ذخیره شد.':'برگهٔ آزمایشی در همین مرورگر ذخیره شد.';
+     status.scrollIntoView({block:'nearest'});
+    }catch(error){message.textContent=error.message;message.scrollIntoView({block:'nearest'})}
+    finally{saving=false;button.disabled=false}
+   }
+   break;
+ }
+});
+const normal=value=>digits(value).trim().replace(/ي/g,'ی').replace(/ك/g,'ک').toLowerCase();
+function drawArchive(){
+ const q=normal(search.value);
+ const matches=records.filter(r=>normal(r.sheet.name).includes(q)||normal(r.sheet.invoice).includes(q));
+ const collator=new Intl.Collator('fa',{numeric:true});
+ matches.sort((a,b)=>collator.compare(a.sheet.name,b.sheet.name)||collator.compare(a.sheet.invoice,b.sheet.invoice)||b.updatedAt.localeCompare(a.updatedAt));
+ const size=10;
+ page=Math.max(0,Math.min(page,Math.ceil(matches.length/size)-1));
+ const view=matches.slice(page*size,(page+1)*size);
+ let group='';
+ document.querySelector('#archiveCount').textContent=fa(records.length);
+ document.querySelector('#records').innerHTML=view.length?view.map(record=>{
+  const sheet=record.sheet, heading=sheet.name.trim(), newGroup=group!==heading;group=heading;
+  return (newGroup?`<h3><bdi>${safe(heading)}</bdi></h3>`:'')+`<div class="record" data-id="${safe(record.id)}"><div><bdi>${safe(sheet.invoice||'بدون شماره فاکتور')}</bdi> <small>· ${fa(totalContainers(sheet))} ظرف / نمونه</small></div><div class="row"><button type="button" data-open>باز کردن</button><select aria-label="مقصد پرونده"><option value="">${live?'انتخاب مقصد':'مقصد آزمایشی'}</option>${destinations.map(v=>`<option${record.destination===v?' selected':''}>${v}</option>`).join('')}</select></div></div>`;
+ }).join('')+`<div class="actions"><button type="button" data-page="-1" ${page===0?'disabled':''}>صفحهٔ قبل</button><small>${fa(page+1)} از ${fa(Math.ceil(matches.length/size))}</small><button type="button" data-page="1" ${(page+1)*size>=matches.length?'disabled':''}>صفحهٔ بعد</button></div>`:'<p class="hint">پرونده‌ای برای نمایش وجود ندارد.</p>';
+}
+search.addEventListener('input',()=>{page=0;drawArchive()});
+document.querySelector('#newSheet').addEventListener('click',()=>{if(saving)return;data=newSheet();currentId=sheetId();currentRevision=0;furthest=0;openSample=0;go(0)});
+document.querySelector('#records').addEventListener('click',e=>{
+ const pager=e.target.closest('[data-page]');
+ if(pager){page+=Number(pager.dataset.page);drawArchive();return}
+ const button=e.target.closest('[data-open]');
+ if(!button)return;
+ const record=records.find(r=>r.id===button.closest('[data-id]').dataset.id);
+ if(!record||saving)return;
+ currentRevision=record.revision||0;
+ data=JSON.parse(JSON.stringify(record.sheet));currentId=record.id;stage=2;furthest=2;openSample=0;review=true;message.textContent='';render(true);
+});
+document.querySelector('#records').addEventListener('change',async e=>{
+ const select=e.target;
+ if(select.tagName!=='SELECT')return;
+ const id=select.closest('[data-id]').dataset.id;
+ if(select.value&&!destinations.includes(select.value))return;
+ if(live){
+  const record=records.find(entry=>entry.id===id);
+  if(!record||select.disabled)return;
+  const destination=select.value;
+  select.disabled=true;
+  try{
+   const saved=await send({action:'destination',id,revision:record.revision,destination});
+   if(currentId===id&&currentRevision===record.revision)currentRevision=saved.revision;
+   status.textContent=destination?'مقصد ثبت شد.':'مقصد پاک شد.';
+  }catch(error){status.textContent=error.message}
+  finally{drawArchive()}
+  return;
+ }
+ if(persist(records.map(record=>record.id===id?{...record,destination:select.value}:record))){
+  status.textContent=select.value?'مقصد آزمایشی یادداشت شد.':'مقصد آزمایشی پاک شد.';
+ }else drawArchive();
+});
+async function send(body){
+ const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ const result=await response.json();
+ if(!response.ok)throw new Error(result.error||'ذخیره انجام نشد.');
+ records=[result.record,...records.filter(record=>record.id!==result.record.id)];
+ return result.record;
+}
+async function loadArchive(){
+ try{
+  const response=await fetch(endpoint,{cache:'no-store'});
+  const result=await response.json();
+  if(!response.ok)throw new Error(result.error||'خواندن پرونده‌ها انجام نشد.');
+  const current=new Map(records.map(record=>[record.id,record]));
+  for(const record of result.records){
+   if((current.get(record.id)?.revision||0)<record.revision)current.set(record.id,record);
+  }
+  records=[...current.values()];
+  drawArchive();
+ }catch(error){status.textContent=error.message;document.querySelector('#archive').open=true}
+}
+if(live){
+ document.querySelector('#previewBadge').hidden=true;
+ document.querySelector('#returnLink').hidden=false;
+ document.querySelector('#archiveTitle').textContent='پرونده‌های ذخیره‌شده';
+ document.querySelector('#archiveHelp').textContent='مقصد به‌صورت یادداشت روی پرونده ذخیره می‌شود.';
+ loadArchive();
+}
+render();drawArchive();
+</script>
+</body>
+</html>
