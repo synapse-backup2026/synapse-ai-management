@@ -12,13 +12,13 @@ export default function AccountsApp({initialData=null}:{initialData?:any}={}){
  async function copy(username:string){setBusy(true);setError('');try{const cached=credentials[username];if(cached?.password){await navigator.clipboard.writeText(cached.password);setNotice('رمز اولیه '+username+' کپی شد.');return}const r=await fetch('/api/auth/accounts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'initial_credentials'})}),d:any=await r.json();if(!r.ok)throw Error(d.error);const c=d.initial_credentials.find((x:any)=>x.username===username);if(!c?.password)throw Error(c?.note||'رمز اولیه موجود نیست؛ از تنظیم رمز استفاده کنید.');setCredentials(old=>({...old,[username]:c}));try{await navigator.clipboard.writeText(c.password)}catch{throw Error('رمز آماده شد؛ برای کپی امن، دوباره دکمه کپی رمز جدید را بزنید.')}setNotice('رمز اولیه '+username+' کپی شد. آن را فقط از مسیر امن تحویل دهید.')}catch(e:any){setError(e.message)}finally{setBusy(false)}}
  return <main className="accounts-page nine-accounts-page" dir="rtl"><a href="/staff">بازگشت به کارتابل</a><header className="page-heading"><div><h1>حساب‌های سازمانی</h1><p>فهرست مسئولیت‌های مصوب و حساب‌های فعلی؛ نام ورود، هویت فرد و سوابق حساب مستقل از عنوان سمت هستند.</p></div><span className="nine-account-count">۹ مسئولیت مصوب</span></header>{error&&<p className="error-banner" role="alert">{error}</p>}{notice&&<p className="notice" role="status">{notice}</p>}{!data?<p>در حال دریافت حساب‌ها…</p>:<><AccountTransferPanel onDone={load}/><section className="synapse-account-guide"><h2>حوزه‌های مسئولیت و دسترسی سازمانی</h2><p>برای مشاهده شرح وظایف، حدود اختیارات، محدودیت‌ها و صفحات مجاز روی فلش هر نوار کلیک کنید. نام کاربری، شناسه و سابقه ورود حفظ می‌شود.</p><p><b>دسترسی‌های مشترک:</b> {sharedStaffSurfaces.join(' · ')}؛ مشاهده هر پرونده و مکاتبه تابع مجوز فرد و نقش در همان پرونده است.</p></section><section className="synapse-accounts-list" aria-label="حساب‌های سازمانی">{['owner','executive','research','scientific','customer','finance','admin','it'].map(username=>data.organization_accounts.find((a:any)=>a.username===username)).filter(Boolean).map((a:any)=><OrganizationAccount key={a.username} a={a} minimum={data.password_minimum} busy={busy} action={action} copy={copy} credential={credentials[a.username]} clear={()=>setCredentials(old=>{const next={...old};delete next[a.username];return next})}/>)}
 <OrganizationAccount
- a={{...data.accountant, username:'accountant', exists:!!data.accountant, access:[], definition:{
+ a={{...data.accountant, username:'accountant', exists:!!data.accountant, access:data.accountant?.access ?? [], definition:{
   role_key:'accountant',
   title_fa:'کارشناس حسابداری',
   title_en:'Accounting Specialist',
   reports_to:'finance_manager',
-  duties:['ثبت دریافت‌ها و پرداخت‌ها و پیگیری اسناد حسابداری','بررسی مغایرت واریزی‌ها و تهیه گزارش برای مدیر مالی'],
-  authority:['ثبت اسناد جدید در محدوده مالی مجاز','مشاهده گردش حساب بانکی و تعرفه‌ها پس از فعال شدن مجوزهای مالی'],
+  duties:['پیگیری اسناد دریافت و پرداخت و تهیه گزارش برای مدیر مالی','بررسی گردش حساب‌های بانکی مجاز و گزارش مغایرت‌ها'],
+  authority:['مشاهده گردش حساب‌های بانکی که مالک صریحاً مجاز کرده است'],
   requires_approval:['اصلاح رکورد موجود نیازمند تأیید مدیریت است','حذف، تأیید نهایی مالی و تغییر اطلاعات بانکی یا تعرفه مجاز نیست']
  }}}
  minimum={data.password_minimum} busy={busy} action={action} copy={copy}
@@ -50,7 +50,7 @@ function OrganizationAccount({a,minimum,busy,action,copy,credential,clear}:any){
    <div className="synapse-account-section"><h3>محدودیت‌ها و تأییدهای لازم</h3><ul>{d.requires_approval.map((v:string)=><li key={v}>{v}</li>)}</ul></div>
    <div className="synapse-account-section"><h3>دسترسی‌های واقعی و جزئیات حساب</h3>
     <p className="hint">فقط مسیرهایی که در حساب فعلی و سرور مجاز هستند نمایش داده می‌شوند. نمایش مسیر، مجوز خواندن همه رکوردها نیست.</p>
-    {accountant&&<p>مجوزهای مالی این حساب هنوز فعال نشده‌اند.</p>}
+    {accountant && a.access.length===0 && <p>در حال حاضر هیچ مسیر مالی قابل‌استفاده‌ای برای این حساب ثبت نشده است.</p>}
     <nav className="nine-account-access">{a.access.map((link:any)=><a key={link.href} href={link.href}>{link.label}</a>)}</nav>
     <p><b>گزارش به:</b> {d.reports_to?roleTitle(d.reports_to):'بالاترین مسئول پژوهشکده'}</p>
     <p>شناسه ثابت: <code dir="ltr">{a.member_id}</code></p>
