@@ -35,7 +35,7 @@ export async function googlePoll(s:InputSource,probe=false){
   if(probe){if(s.method==='gmail_oauth'){const p=await google('https://gmail.googleapis.com/gmail/v1/users/me/profile',{headers});check(p.emailAddress?.toLowerCase()===s.address.toLowerCase(),'حساب با نشانی منبع یکسان نیست.',409)}else await google('https://sheets.googleapis.com/v4/spreadsheets/'+encodeURIComponent(s.sheetId!)+'?fields=spreadsheetId',{headers});await storeSetting('input-health:'+s.id,{...await setting('input-health:'+s.id,{}),status:'authorized',testedRevision:s.revision,lastProbe:stamp(),error:''}).run();return {ok:true,readOnly:true,imported:false}}
   const health=await setting('input-health:'+s.id,{}),same=health.sourceRevision===s.revision;
   let count=0,next='',checkpoint:any={},skipped:any={},created=0,replayed=0;
-  const consume=async(events:any[])=>{const result=await ingest(s,events);for(const r of result.results){if(r.replayed)replayed++;else if(r.id)created++;}count+=events.length;};
+  const consume=async(events:any[])=>{const result=await ingest(s,events);for(const r of result.results){if(r.skipped)skipped[r.skipped]=(skipped[r.skipped]||0)+1;else if(r.replayed)replayed++;else if(r.id)created++;}count+=events.length;};
   if(s.method==='gmail_oauth'){
    const lower=Date.parse(start+'T00:00:00Z'),upper=s.notAfter?Date.parse(s.notAfter+'T00:00:00Z')+86400000:Infinity;
    const windowStart=same&&health.cursor?health.windowStart:Math.max(lower,same&&health.completedThrough?health.completedThrough-60000:lower);
