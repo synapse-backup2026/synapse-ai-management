@@ -18,15 +18,18 @@ h1{font-size:clamp(17px,4vw,24px);margin-top:5px}
 h2{font-size:18px;margin:0 0 10px}h3{font-size:15px}
 .sub,.hint,small{color:#595959;font-size:.83rem}
 .badge,.count{background:#eee;border-radius:30px;padding:3px 10px;font-size:.77rem;white-space:nowrap}
-.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:8px 0;margin:11px 0 13px;border-block:1px solid #ececec;list-style:none}
-.step-progress{height:4px;margin:0 0 13px;background:#e9efeb;border-radius:99px;overflow:hidden}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:11px 0;margin:14px 0 11px;border-block:1px solid #e5eeec;list-style:none}
+.steps li{position:relative;min-width:0}
+.steps li:not(:last-child)::after{content:'';position:absolute;inset-block-start:19px;inset-inline-start:calc(50% + 20px);width:calc(100% - 32px);height:2px;background:#dce6e3;pointer-events:none}
+.steps li.completed::after{background:#26856c}
+.step-progress{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 .step-progress span{display:block;width:0;height:100%;background:#15803d;border-radius:inherit;transition:width .18s ease}
 @media(prefers-reduced-motion:reduce){.step-progress span{transition:none}}
 .steps button{display:grid;place-items:center;gap:3px;background:white;border-color:transparent;width:100%;height:100%;font-size:.8rem;padding:6px 4px;line-height:1.4;color:#252525}
 .steps button:disabled{opacity:1;color:#595959}
 .steps button[aria-current]{background:#eee;font-weight:bold}
 .steps b{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#eee}
-.steps [aria-current] b{background:#111;color:white}
+.steps [aria-current] b,.steps .completed b{background:#246759;color:white}
 .grid,.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}
 .wide{grid-column:1/-1}
 label{display:grid;gap:4px;min-width:0;font-size:.88rem;color:#414141}
@@ -79,7 +82,7 @@ dd{margin:0;text-align:end;overflow-wrap:anywhere}
 .calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center;margin-top:4px}
 .calendar-days button{padding:2px;min-height:32px}
 .calendar-days button[aria-pressed=true]{background:#171717;color:#fff}
-:root[data-embedded]{background:transparent}
+:root[data-embedded]{background:transparent;overflow:hidden}
 [data-embedded] main{max-width:1100px;padding:2px 3px 12px}
 [data-embedded] .shell,[data-embedded] .archive{border-color:#cddedb;box-shadow:0 5px 18px #164b4310}
 [data-embedded] header{background:#edf6f4;border:1px solid #dcebe8;border-radius:12px;padding:10px 13px}
@@ -88,6 +91,29 @@ dd{margin:0;text-align:end;overflow-wrap:anywhere}
 [data-embedded] .sample,[data-embedded] .sample-box{border-color:#d7e5e2}
 [data-embedded] :is(.measure,.summary){background:#edf5f3}
 [data-embedded] .archive>summary{color:#214a46}
+[data-stage="1"] .sample-grid{gap:8px 10px}
+.sample-grid{font-family:Vazirmatn,Tahoma,Arial,sans-serif}
+.sample-grid label{font-size:.81rem}
+.sample-grid label :is(input:not([type=checkbox]),select,textarea){padding:5px 8px;min-height:34px}
+.sample-grid .sample-box{padding:5px 8px}
+.sample-grid .repeat-row{margin:4px 0}
+.sample-grid .measure .pair{grid-template-columns:repeat(3,minmax(0,1fr))}
+.sample-grid .measure .pair label{grid-column:auto}
+.material{border:1px solid #dce8e5;border-radius:9px;margin-top:6px;padding:6px 8px;background:#f7faf9;min-width:0}
+.material>summary{cursor:pointer;font-size:.82rem;font-weight:600}
+.material[open]>summary{margin-bottom:5px}
+.material-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px 8px}
+.material-fields .material-name{grid-column:span 2}
+.materials button{margin-top:6px}
+[data-assay-other]{margin-top:6px}
+#archiveHelp{margin-top:4px}
+[data-remove-sheet]{color:#8b2930}
+@media(max-width:550px){
+ .sample-grid .measure .pair,.material-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .sample-grid .measure .pair label:first-child,.material-fields .material-name{grid-column:1/-1}
+ .sample-grid label :is(input,select,textarea){font-size:16px}
+ .steps li:not(:last-child)::after{inset-inline-start:calc(50% + 16px);width:calc(100% - 24px)}
+}
 </style>
 </head>
 <body>
@@ -134,14 +160,18 @@ function monthDays(year,month){
  }
  return 29;
 }
-const destinations=['انبار','آزمایشگاه مطالعات حیوانی','آزمایشگاه بافت‌شناسی','آزمایشگاه سلولی و مولکولی','آزمایشگاه پروتئینی و بیوشیمی','آزمایشگاه میکروبیولوژی','سایر خدمات آزمایشگاهی'];
+const supplyModes=['انتخاب کنید','تأمین توسط محقق','تأمین توسط پژوهشکده','نیازمند مشاوره'];
+const materialKinds=['دارو / ماده آزمایشی','پرایمر','مارکر / مورد قابل اندازه‌گیری','سایر اقلام'];
+let destinations=[{group:'انبار',key:'warehouse',name:'انبار نمونه‌های پژوهشی'}];
 const confirmText='تأیید می‌کنم اطلاعات نمونه‌ها صحیح است و مجوزها و رضایت‌های لازم، در صورت شمول، اخذ شده‌اند.';
 const stageNames=['مشخصات پژوهشگر','اطلاعات نمونه‌ها','شرایط و تأیید'];
 const live=/^https?:$/.test(location.protocol)&&location.pathname==='/synapse-sample-form.html';
 const embedded=window.parent!==window;
+const referralsOnly=live&&new URLSearchParams(location.search).get('mode')==='referrals';
 if(embedded)document.documentElement.dataset.embedded='';
 const endpoint='/api/sample-intake/researcher';
-let currentRevision=0, saving=false;
+let currentRevision=0, saving=false, canCreate=!live, canEdit=!live, canRefer=!live;
+const locked=()=>live&&(referralsOnly||!canCreate||(currentRevision>0&&!canEdit));
 const storageKey='synapse-sample-form-preview-v1';
 const oldAssays=[1,2,3,4,5,6];
 const form=document.querySelector('#wizard');
@@ -154,7 +184,8 @@ const digits=value=>String(value).replace(/[۰-۹٠-٩]/g,d=>String('۰۱۲۳۴�
 const numeric=value=>digits(value).trim().replace('٫','.');
 const safe=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sheetId=()=>globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
-function newSample(){return {type:0,name:'',species:0,originNotes:'',code:'',groups:[''],markerMode:0,markers:'',count:'',amount:'',unit:0,condition:0,container:'',year:'',month:'',day:'',hour:'',minute:'',assays:[],otherTechnique:'',notes:''}}
+function newMaterial(){return {kind:0,name:'',count:'',amount:'',unit:-1}}
+function newSample(){return {type:0,name:'',species:0,originNotes:'',code:'',groups:[''],markerMode:0,markers:'',count:'',amount:'',unit:-1,condition:0,container:'',year:'',month:'',day:'',hour:'',minute:'',supplyMode:0,materials:[],assays:[],otherTechnique:'',notes:''}}
 function newSheet(){return {name:'',org:'',mobile:'',invoice:'',email:'',samples:[newSample()],delivery:0,temp:1,transport:'',biosafety:'',confirmed:false}}
 let data=newSheet(), stage=0, furthest=0, review=false, openSample=0, page=0, currentId=sheetId();
 let records=[];
@@ -175,13 +206,37 @@ const validMobile=value=>/^(?:09|\+989|00989)\d{9}$/.test(digits(value).replace(
 const validContact=sheet=>!!sheet.name.trim()&&validMobile(sheet.mobile)&&!!sheet.invoice.trim()&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sheet.email.trim());
 const validCollection=s=>/^\d{4}$/.test(s.year)&&Number(s.year)>=1200&&Number(s.year)<=currentYear+1&&
  /^(?:[1-9]|1[0-2])$/.test(s.month)&&/^[1-9]\d?$/.test(s.day)&&Number(s.day)<=monthDays(Number(s.year),Number(s.month));
-const validSample=s=>types[s.type]&&(s.type!==otherType||s.name.trim())&&s.species>0&&species[s.species]&&(s.species!==species.length-1||s.originNotes.trim())&&validCollection(s)&&validQuantity(s)&&units[s.unit]!==undefined;
+function missingField(s){
+ if(s.type===otherType&&!s.name.trim())return '[data-other-type] input';
+ if(!s.species)return '[name=species]';
+ if(s.species===species.length-1&&!s.originNotes.trim())return '[name=originNotes]';
+ const group=s.groups.findIndex(name=>!name.trim());
+ if(group!==-1)return '[data-group="'+group+'"]';
+ if(countValue(s.count)<1)return '[name=count]';
+ if(!validQuantity(s))return '[name=amount]';
+ if(!units[s.unit])return '[name=unit]';
+ if(!validCollection(s))return '[name=collection]';
+ if(!s.supplyMode)return '[name=supplyMode]';
+ if(s.supplyMode===1){
+  if(!s.materials.length)return '[data-action=add-material]';
+  const index=s.materials.findIndex(m=>!m.name.trim()||!validQuantity(m)||!units[m.unit]);
+  if(index!==-1){
+   const m=s.materials[index];
+   return '[data-material="'+index+'"] [name='+(!m.name.trim()?'name':!countValue(m.count)?'count':!validQuantity(m)?'amount':'unit')+']';
+  }
+ }
+ if(!s.assays.length)return '[data-assay]';
+ if(s.assays.includes(6)&&!s.otherTechnique.trim())return '[name=otherTechnique]';
+ return '';
+}
+const validSample=s=>!missingField(s);
 const canReview=()=>validContact(data)&&data.samples.every(validSample)&&data.confirmed;
 const input=(object,key,label,attrs='',extra='')=>`<label class="${extra}">${label}<input name="${key}" value="${safe(object[key])}" ${attrs}></label>`;
 const textarea=(object,key,label,placeholder,extra='')=>`<label class="${extra}">${label}<textarea name="${key}" rows="2" placeholder="${safe(placeholder)}">${safe(object[key])}</textarea></label>`;
 const select=(object,key,label,options)=>`<label>${label}<select name="${key}">${options.map((v,i)=>`<option value="${i}"${object[key]===i?' selected':''}>${safe(v)}</option>`).join('')}</select></label>`;
 const radio=(key,label,options)=>`<fieldset class="choice"><legend>${label}</legend>${options.map((v,i)=>`<label><input type="radio" name="${key}" value="${i}"${data[key]===i?' checked':''}>${safe(v)}</label>`).join('')}</fieldset>`;
-const totalText=s=>validQuantity(s)?`${fa(countValue(s.count))} × ${fa(Number(numeric(s.amount)))} = ${fa(countValue(s.count)*Number(numeric(s.amount)))} ${units[s.unit]}`:'';
+const unitSelect=item=>`<label>واحد اندازه‌گیری *<select name="unit" required><option value="-1">انتخاب واحد</option>${units.map((unit,i)=>`<option value="${i}" ${item.unit===i?'selected':''}>${unit}</option>`).join('')}</select></label>`;
+const totalText=s=>validQuantity(s)&&units[s.unit]?`${fa(countValue(s.count))} × ${fa(Number(numeric(s.amount)))} = ${fa(countValue(s.count)*Number(numeric(s.amount)))} ${units[s.unit]}`:'';
 function validQuantity(s){return countValue(s.count)>0&&positive(s.amount)&&Number.isFinite(countValue(s.count)*Number(numeric(s.amount)))}
 function contact(){return `<h2 data-heading tabindex="-1">۱. اطلاعات پژوهشگر و سفارش</h2><div class="grid">
  ${input(data,'name','نام و نام خانوادگی پژوهشگر *','required autocomplete="name" placeholder="نام پژوهشگر"','wide')}
@@ -219,34 +274,51 @@ function sampleDate(s){
  <button type="button" data-action="calendar-next" aria-label="ماه بعد">›</button></div>
  <div class="calendar-days">${calendarDays(year,month,s.day)}</div></div></fieldset>`;
 }
+function materialRows(s){
+ return s.materials.map((item,i)=>`<details class="material" data-material="${i}" ${i===s.materials.length-1?'open':''}>
+ <summary>${fa(i+1)}. <bdi data-material-title>${safe(item.name||materialKinds[item.kind])}</bdi></summary>
+ <div class="material-fields">
+ ${select(item,'kind','نوع قلم',materialKinds)}
+ ${input(item,'name','نام قلم *','required placeholder="نام دارو، پرایمر یا ماده"','material-name')}
+ ${input(item,'count','تعداد *','required inputmode="numeric"')}
+ ${input(item,'amount','مقدار هر واحد *','required inputmode="decimal"')}
+ ${unitSelect(item)}
+ </div><button type="button" data-action="remove-material">حذف قلم</button></details>`).join('');
+}
 function sampleCard(s,i){return `<details class="sample" data-sample="${i}" ${openSample===i?'open':''}>
  <summary>نمونه شماره ${fa(i+1)} · ${safe(sampleName(s))}</summary>
- <div class="grid">
+ <div class="grid sample-grid">
  ${select(s,'type','نوع نمونه *',types)}
- <div data-other-type ${s.type===otherType?'':'hidden'}>${input(s,'name','نوع دیگر نمونه *','placeholder="نوع نمونه را بنویسید"')}</div>
  ${select(s,'species','گونه / منشأ زیستی *',species)}
- ${input(s,'code','شناسه نمونه یا گروه (اختیاری)','placeholder="مثلاً Ctrl-01 / T1 / Batch A"')}
- <div class="wide" data-origin ${s.species===species.length-1?'':'hidden'}>${input(s,'originNotes','توضیح گونه یا منشأ زیستی *','placeholder="گونه، منشأ یا نامشخص"')}</div>
- <fieldset class="sample-box"><legend>گروه‌های پژوهش</legend>
- ${s.groups.map((group,i)=>`<div class="repeat-row"><label>نام گروه ${fa(i+1)}<input data-group="${i}" value="${safe(group)}" placeholder="مثلاً کنترل یا بیمار"></label>${i>0?`<button type="button" data-action="remove-group" data-index="${i}" aria-label="حذف گروه ${fa(i+1)}">حذف</button>`:''}</div>`).join('')}
+ <div data-other-type ${s.type===otherType?'':'hidden'}>${input(s,'name','نوع دیگر نمونه *','placeholder="نوع نمونه را بنویسید"')}</div>
+ <div data-origin ${s.species===species.length-1?'':'hidden'}>${input(s,'originNotes','توضیح گونه یا منشأ زیستی *','placeholder="گونه، منشأ یا نامشخص"')}</div>
+ <fieldset class="sample-box wide"><legend>گروه‌های پژوهش *</legend>
+ <p class="hint">نام همهٔ گروه‌ها را بنویسید. برای هر گروه سه تکرار در نظر بگیرید.</p>
+ ${s.groups.map((group,i)=>`<div class="repeat-row"><label>نام گروه ${fa(i+1)} *<input data-group="${i}" value="${safe(group)}" placeholder="مثلاً کنترل یا بیمار"></label>${i>0?`<button type="button" data-action="remove-group" data-index="${i}" aria-label="حذف گروه ${fa(i+1)}">حذف</button>`:''}</div>`).join('')}
  <button type="button" data-action="add-group">+ افزودن گروه</button></fieldset>
- <fieldset class="sample-box"><legend>مارکرها یا موارد قابل اندازه‌گیری (اختیاری)</legend>
- <p class="hint">شناسه برای کدگذاری نمونه است. نام مارکرها را اینجا وارد کنید.</p>
- ${select(s,'markerMode','نحوه تعیین مارکرها',markerModes)}
- ${input(s,'markers','نام مارکرها یا موارد قابل اندازه‌گیری','placeholder="نام مارکرها"')}</fieldset>
  <fieldset class="measure wide"><legend>مقدار دقیق نمونه</legend><div class="pair">
- ${input(s,'count','تعداد ظروف / نمونه‌ها *','required inputmode="numeric" placeholder="مثلاً 12"','wide')}
- ${input(s,'amount','مقدار هر نمونه *','required inputmode="decimal" placeholder="مثلاً 250"')}
- ${select(s,'unit','واحد اندازه‌گیری *',units)}
+ ${input(s,'count','تعداد ظروف / نمونه‌ها *','required inputmode="numeric" placeholder="مثلاً ۱۲"')}
+ ${input(s,'amount','مقدار هر نمونه *','required inputmode="decimal" placeholder="مثلاً ۲۵۰"')}
+ ${unitSelect(s)}
  <output class="wide" aria-live="polite">${totalText(s)}</output>
  </div></fieldset>
  ${select(s,'condition','وضعیت / نوع نگهداری نمونه',conditions)}
- ${input(s,'container','نوع ظرف / فیکساتیو / محیط نگهدارنده','placeholder="مثلاً میکروتیوب، بافر، فرمالین"')}
+ ${input(s,'container','نوع ظرف / فیکساتیو / محیط نگهدارنده','placeholder="مثلاً میکروتیوب یا بافر"')}
  ${sampleDate(s)}
- <fieldset class="sample-box wide"><legend>آزمون‌ها و تکنیک‌های همین نمونه (اختیاری)</legend><div class="techniques">
+ <fieldset class="sample-box wide materials"><legend>اقلام همراه نمونه و نحوهٔ تأمین *</legend>
+ <p class="hint">دارو، پرایمر، مارکر یا اقلام دیگری را که جدا از نمونه تحویل می‌دهید، اینجا ثبت کنید.</p>
+ ${select(s,'supplyMode','نحوهٔ تأمین *',supplyModes)}
+ <div data-materials ${s.supplyMode===1?'':'hidden'}>
+ ${materialRows(s)}
+ <button type="button" data-action="add-material">+ افزودن دارو، پرایمر یا قلم دیگر</button>
+ </div></fieldset>
+ <fieldset class="sample-box wide"><legend>آزمون‌ها و تکنیک‌های مربوط به همین نمونه *</legend>
+ <p class="hint">حداقل یک گزینه را انتخاب کنید.</p><div class="techniques">
  ${assays.map((title,index)=>`<label><input type="checkbox" data-assay="${index}" ${s.assays.includes(index)?'checked':''}>${title}</label>`).join('')}
- </div>${input(s,'otherTechnique','نام تکنیک‌های دیگر (اختیاری)','placeholder="در صورت نیاز، نام تکنیک‌ها را بنویسید"')}</fieldset>
- ${textarea(s,'notes','توضیحات علمی و شرایط خاص','شرح گروه‌ها، روش تهیه، شناسه‌ها و ویژگی‌های نمونه','wide')}
+ </div><div data-assay-other ${s.assays.includes(6)?'':'hidden'}>${input(s,'otherTechnique','نام یا توضیح آزمون دیگر *','placeholder="آزمون یا تکنیک موردنظر"')}</div></fieldset>
+ ${input(s,'markers','مارکرها یا موارد قابل اندازه‌گیری (اختیاری)','placeholder="نام موارد موردنظر برای اندازه‌گیری"','wide')}
+ ${input(s,'code','شناسه نمونه یا گروه (اختیاری)','placeholder="مثلاً Ctrl-01"','wide')}
+ ${textarea(s,'notes','توضیحات علمی و شرایط خاص','شرح ویژگی‌های نمونه یا موارد قابل اندازه‌گیری','wide')}
  </div>
  ${data.samples.length>1?`<button type="button" class="remove" data-action="remove" aria-label="حذف نمونه شماره ${fa(i+1)}">حذف این نمونه</button>`:''}
  </details>`}
@@ -265,12 +337,15 @@ function details(sheet){return `<dl><dt>سازمان</dt><dd>${safe(sheet.org||'
  ${sheet.samples.map((s,i)=>`<article class="sample"><h3>نمونه شماره ${fa(i+1)} · <bdi>${safe(sampleName(s))}</bdi></h3>
  <dl><dt>منشأ زیستی</dt><dd>${s.species?species[s.species]:'—'}${s.species===species.length-1&&s.originNotes?' · '+safe(s.originNotes):''}</dd><dt>شناسه نمونه یا گروه</dt><dd><bdi>${safe(s.code||'—')}</bdi></dd>
  <dt>گروه‌ها</dt><dd>${safe(s.groups.map(g=>g.trim()).filter(Boolean).join('، ')||'—')}</dd>
- <dt>نحوه تعیین مارکر</dt><dd>${s.markerMode?markerModes[s.markerMode]:'—'}</dd><dt>مارکرها</dt><dd>${safe(s.markers||'—')}</dd>
+ ${s.markers?`<dt>مارکرها یا موارد قابل اندازه‌گیری</dt><dd>${safe(s.markers)}</dd>`:''}
+ ${s.markerMode?`<dt>نحوهٔ تعیین مارکر در فرم پیشین</dt><dd>${safe(markerModes[s.markerMode])}</dd>`:''}
+ <dt>نحوهٔ تأمین اقلام</dt><dd>${s.supplyMode?supplyModes[s.supplyMode]:'—'}</dd>
+ ${s.supplyMode===1?`<dt>اقلام همراه</dt><dd><ul>${s.materials.map(m=>`<li><bdi>${safe(m.name)}</bdi> · ${materialKinds[m.kind]} · ${totalText(m)}</li>`).join('')}</ul></dd>`:''}
  <dt>آزمون‌ها و تکنیک‌ها</dt><dd>${safe([...s.assays.map(i=>assays[i]),s.otherTechnique].filter(Boolean).join('، ')||'—')}</dd>
  <dt>وضعیت نگهداری</dt><dd>${conditions[s.condition]}</dd><dt>ظرف یا محیط نگهدارنده</dt><dd>${safe(s.container||'—')}</dd><dt>تاریخ برداشت (شمسی)</dt><dd><bdi>${validCollection(s)?faDigits(s.year+'/'+s.month.padStart(2,'0')+'/'+s.day.padStart(2,'0')+(s.hour&&s.minute?' '+s.hour+':'+s.minute:'')):'—'}</bdi></dd><dt>توضیحات علمی</dt><dd>${safe(s.notes||'—')}</dd></dl></article>`).join('')}`}
 function conditionsStep(){return `<h2 data-heading tabindex="-1">۳. شرایط حمل، آزمون و تأیید پژوهشگر</h2>${review?`
- <section class="review"><h3>مرور نهایی</h3><p class="hint">${live?'نسخهٔ آمادهٔ ذخیره در سامانه':'پیش‌نمایش برگهٔ محقق'}</p>${summary(data)}${details(data)}<p class="hint">${confirmText}</p></section>
- <div class="actions"><button type="button" data-action="back">بازگشت و ویرایش نمونه‌ها</button><button type="button" data-action="save" class="primary">${live?'ذخیرهٔ برگه در سامانه':'ذخیره آزمایشی در این مرورگر'}</button></div>`:`
+ <section class="review"><h3>${currentRevision?'برگهٔ ثبت‌شده':'مرور نهایی'}</h3><p class="hint">${currentRevision?'این برگه قبلاً ثبت شده است.':live?'اگر اطلاعات به اصلاح نیاز دارد، قبل از ثبت نهایی آن را ویرایش کنید. پس از ثبت، فقط مالک سامانه می‌تواند برگه را تغییر دهد.':'پیش‌نمایش برگهٔ محقق'}</p>${summary(data)}${details(data)}<p class="hint">${confirmText}</p></section>
+ ${locked()?'':`<div class="actions"><button type="button" data-action="back">بازگشت و ویرایش نمونه‌ها</button><button type="button" data-action="save" class="primary">${currentRevision?'ذخیرهٔ ویرایش مالک':live?'ثبت نهایی برگه':'ذخیره آزمایشی در این مرورگر'}</button></div>`}`:`
  <div class="grid">${radio('delivery','روش تحویل نمونه‌ها',deliveries)}${radio('temp','شرایط دمایی حمل',temperatures)}
  <p class="hint wide">انتخاب این بخش صرفاً ثبت شرایط محموله است؛ شرایط مناسب باید مطابق الزامات همان آزمون تعیین شود.</p>
  ${input(data,'transport','روش و مدت حمل','placeholder="مثلاً مدت تقریبی حمل و روش بسته‌بندی"')}
@@ -280,8 +355,11 @@ function conditionsStep(){return `<h2 data-heading tabindex="-1">۳. شرایط 
  <div class="actions"><button type="button" data-action="back">بازگشت و ویرایش نمونه‌ها</button><button id="review" class="primary" ${canReview()?'':'disabled'}>بررسی نهایی برگه نمونه</button></div>`}`}
 function render(focus=false){
  document.querySelector('#stepProgress').style.width=stage*50+'%';
- document.querySelector('#steps').innerHTML=stageNames.map((name,i)=>`<li><button type="button" data-stage="${i}" ${stage===i?'aria-current="step"':''} ${i>furthest?'disabled':''}><b>${fa(i+1)}</b>${name}</button></li>`).join('');
- form.innerHTML=[contact,samples,conditionsStep][stage]();
+ document.querySelector('#steps').innerHTML=stageNames.map((name,i)=>`<li class="${i<stage?'completed':''}"><button type="button" data-stage="${i}" ${stage===i?'aria-current="step"':''} ${i>furthest||locked()?'disabled':''}><b>${fa(i+1)}</b>${name}</button></li>`).join('');
+ form.dataset.stage=String(stage);
+ const shell=form.closest('.shell');
+ shell.hidden=(referralsOnly||!canCreate)&&!review;
+ form.innerHTML=shell.hidden?'':[contact,samples,conditionsStep][stage]();
  if(focus){
   const heading=form.querySelector('[data-heading]');
   heading.focus({preventScroll:true});
@@ -292,7 +370,7 @@ function render(focus=false){
 function go(i){stage=i;review=false;message.textContent='';render(true)}
 function updateField(e){
  const field=e.target;
- if(!field.name&&!field.matches('[data-group],[data-assay]'))return;
+ if(locked()||!field.name&&!field.matches('[data-group],[data-assay]'))return;
  const card=field.closest('[data-sample]');
  const target=card?data.samples[Number(card.dataset.sample)]:data;
  if(field.matches('[data-group]')){
@@ -302,6 +380,15 @@ function updateField(e){
  if(field.matches('[data-assay]')){
   const index=Number(field.dataset.assay);
   target.assays=field.checked?[...target.assays,index]:target.assays.filter(value=>value!==index);
+  card.querySelector('[data-assay-other]').hidden=!target.assays.includes(6);
+  data.confirmed=false;return;
+ }
+ const material=field.closest('[data-material]');
+ if(material){
+  const item=target.materials[Number(material.dataset.material)];
+  if(!Object.hasOwn(item,field.name))return;
+  item[field.name]=field.tagName==='SELECT'?Number(field.value):field.value;
+  material.querySelector('[data-material-title]').textContent=item.name||materialKinds[item.kind];
   data.confirmed=false;return;
  }
  if(!Object.hasOwn(target,field.name))return;
@@ -309,6 +396,7 @@ function updateField(e){
  target[field.name]=field.type==='checkbox'?field.checked:(field.type==='radio'||field.tagName==='SELECT')&&!dateKeys.includes(field.name)?Number(field.value):field.value;
  if(field.name!=='confirmed')data.confirmed=false;
  if(card){
+  if(field.name==='supplyMode')card.querySelector('[data-materials]').hidden=target.supplyMode!==1;
   if(field.name==='species')card.querySelector('[data-origin]').hidden=target.species!==species.length-1;
   if(field.name==='type')card.querySelector('[data-other-type]').hidden=target.type!==otherType;
   if(field.name==='type'||field.name==='name')card.querySelector('summary').textContent='نمونه شماره '+fa(Number(card.dataset.sample)+1)+' · '+sampleName(target);
@@ -330,6 +418,7 @@ form.addEventListener('change',e=>{const cal=e.target.closest('.calendar');if(ca
 form.addEventListener('input',updateField);
 form.addEventListener('submit',e=>{
  e.preventDefault();
+ if(locked())return;
  if(stage===0&&!validContact(data)){
   message.textContent='نام پژوهشگر، شماره موبایل ایران، ایمیل معتبر و شماره فاکتور را وارد کنید.';
   form.elements[!data.name.trim()?'name':!validMobile(data.mobile)?'mobile':!data.email.trim()||!form.elements.email.validity.valid?'email':'invoice'].focus();return;
@@ -338,10 +427,11 @@ form.addEventListener('submit',e=>{
   const invalid=data.samples.findIndex(s=>!validSample(s));
   if(invalid!==-1){
    const card=form.querySelector('[data-sample="'+invalid+'"]');card.open=true;
-   message.textContent='نوع، منشأ زیستی، مقدار و تاریخ برداشت نمونه شماره '+fa(invalid+1)+' را کامل کنید.';
-   const bad=data.samples[invalid];
-   const key=bad.type===otherType&&!bad.name.trim()?'name':!bad.species?'species':bad.species===species.length-1&&!bad.originNotes.trim()?'originNotes':!countValue(bad.count)?'count':!validQuantity(bad)?'amount':'collection';
-   card.querySelector('[name="'+key+'"]').focus();return;
+   message.textContent='موارد الزامی نمونهٔ شماره '+fa(invalid+1)+' را کامل کنید.';
+   const field=card.querySelector(missingField(data.samples[invalid]));
+   const item=field.closest('[data-material]');
+   if(item)item.open=true;
+   field.focus();return;
   }
  }
  if(stage<2){furthest=Math.max(furthest,stage+1);go(stage+1)}
@@ -349,7 +439,7 @@ form.addEventListener('submit',e=>{
 });
 document.querySelector('#steps').addEventListener('click',e=>{
  const button=e.target.closest('button[data-stage]');
- if(!button)return;
+ if(!button||locked())return;
  const next=Number(button.dataset.stage);
  if(next>0&&!validContact(data)){go(0);message.textContent='ابتدا مشخصات پژوهشگر را کامل کنید.';return}
  if(next===2&&!data.samples.every(validSample)){go(1);message.textContent='ابتدا اطلاعات نمونه‌ها را کامل کنید.';return}
@@ -361,7 +451,7 @@ function persist(next){
 }
 form.addEventListener('click',async e=>{
  const button=e.target.closest('button[data-action]');
- if(!button)return;
+ if(!button||locked())return;
  switch(button.dataset.action){
   case 'calendar-toggle': {
    const cal=button.nextElementSibling;
@@ -395,6 +485,17 @@ form.addEventListener('click',async e=>{
    form.querySelector('[data-sample="'+openSample+'"] [data-group="'+(groups.length-1)+'"]').focus();
    break;
   }
+  case 'add-material':
+  case 'remove-material': {
+   openSample=Number(button.closest('[data-sample]').dataset.sample);
+   const items=data.samples[openSample].materials;
+   if(button.dataset.action==='add-material')items.push(newMaterial());
+   else items.splice(Number(button.closest('[data-material]').dataset.material),1);
+   data.confirmed=false;render();
+   const active=form.querySelector('[data-sample="'+openSample+'"]');
+   (active.querySelector('[data-material="'+(items.length-1)+'"] [name=name]')||active.querySelector('[data-action=add-material]')).focus();
+   break;
+  }
   case 'back': go(stage-1);break;
   case 'add':
    data.samples.push(newSample());data.confirmed=false;openSample=data.samples.length-1;render();
@@ -408,12 +509,17 @@ form.addEventListener('click',async e=>{
   case 'save':
    if(!review||!canReview()||saving)return;
    {const existing=records.find(record=>record.id===currentId);
-    const record={id:currentId,catalogVersion:2,sheet:JSON.parse(JSON.stringify(data)),destination:existing?.destination||'',updatedAt:new Date().toISOString()};
+    const sheet=JSON.parse(JSON.stringify(data));
+    for(const sample of sheet.samples){
+     if(sample.supplyMode!==1)sample.materials=[];
+     if(!sample.assays.includes(6))sample.otherTechnique='';
+    }
+    const record={id:currentId,catalogVersion:2,sheet,destination:existing?.destination||'',updatedAt:new Date().toISOString()};
     saving=true;button.disabled=true;
     try{
      if(live){
       const saved=await send({action:'save',id:record.id,revision:currentRevision,sheet:record.sheet});
-      if(currentId===saved.id)currentRevision=saved.revision;
+      if(currentId===saved.id){currentRevision=saved.revision;render()}
      }else if(!persist([record,...records.filter(entry=>entry.id!==record.id)])){
       throw new Error('ذخیرهٔ آزمایشی در این مرورگر در دسترس نیست.');
      }
@@ -428,6 +534,18 @@ form.addEventListener('click',async e=>{
  }
 });
 const normal=value=>digits(value).trim().replace(/ي/g,'ی').replace(/ك/g,'ک').toLowerCase();
+function destinationOptions(record){
+ const selected=record.destinationKey||'';
+ const groups=new Map();
+ for(const item of destinations){
+  if(!groups.has(item.group))groups.set(item.group,[]);
+  groups.get(item.group).push(item);
+ }
+ const previous=record.destination&&!destinations.some(item=>item.key===selected)
+  ? `<option value="" selected disabled>${safe(record.destination)}</option>`:'';
+ return `<option value="">${record.destination?'برداشتن ارجاع':'انتخاب مقصد ارجاع'}</option>${previous}`+
+  [...groups].map(([group,items])=>`<optgroup label="${safe(group)}">${items.map(item=>`<option value="${safe(item.key)}" ${selected===item.key?'selected':''}>${safe(item.name)}</option>`).join('')}</optgroup>`).join('');
+}
 function drawArchive(){
  const q=normal(search.value);
  const matches=records.filter(r=>normal(r.sheet.name).includes(q)||normal(r.sheet.invoice).includes(q));
@@ -440,26 +558,41 @@ function drawArchive(){
  document.querySelector('#archiveCount').textContent=fa(records.length);
  document.querySelector('#records').innerHTML=view.length?view.map(record=>{
   const sheet=record.sheet, heading=sheet.name.trim(), newGroup=group!==heading;group=heading;
-  return (newGroup?`<h3><bdi>${safe(heading)}</bdi></h3>`:'')+`<div class="record" data-id="${safe(record.id)}"><div><bdi>${safe(sheet.invoice||'بدون شماره فاکتور')}</bdi> <small>· ${fa(totalContainers(sheet))} ظرف / نمونه</small></div><div class="row"><button type="button" data-open>باز کردن</button><select aria-label="مقصد پرونده"><option value="">${live?'انتخاب مقصد':'مقصد آزمایشی'}</option>${destinations.map(v=>`<option${record.destination===v?' selected':''}>${v}</option>`).join('')}</select></div></div>`;
+  return (newGroup?`<h3><bdi>${safe(heading)}</bdi></h3>`:'')+`<div class="record" data-id="${safe(record.id)}"><div><bdi>${safe(sheet.invoice||'بدون شماره فاکتور')}</bdi> <small>· ${fa(totalContainers(sheet))} ظرف / نمونه</small></div><div class="row"><button type="button" data-open>باز کردن</button>${canRefer?`<select aria-label="مقصد پرونده">${destinationOptions(record)}</select>`:record.destination?`<small>${safe(record.destination)}</small>`:''}${canEdit&&live?'<button type="button" data-remove-sheet>حذف برگه</button>':''}</div></div>`;
  }).join('')+`<div class="actions"><button type="button" data-page="-1" ${page===0?'disabled':''}>صفحهٔ قبل</button><small>${fa(page+1)} از ${fa(Math.ceil(matches.length/size))}</small><button type="button" data-page="1" ${(page+1)*size>=matches.length?'disabled':''}>صفحهٔ بعد</button></div>`:'<p class="hint">پرونده‌ای برای نمایش وجود ندارد.</p>';
 }
 search.addEventListener('input',()=>{page=0;drawArchive()});
-document.querySelector('#newSheet').addEventListener('click',()=>{if(saving)return;data=newSheet();currentId=sheetId();currentRevision=0;furthest=0;openSample=0;go(0)});
-document.querySelector('#records').addEventListener('click',e=>{
+document.querySelector('#newSheet').addEventListener('click',()=>{if(saving||!canCreate||referralsOnly)return;data=newSheet();currentId=sheetId();currentRevision=0;furthest=0;openSample=0;go(0)});
+document.querySelector('#records').addEventListener('click',async e=>{
  const pager=e.target.closest('[data-page]');
  if(pager){page+=Number(pager.dataset.page);drawArchive();return}
+ const remove=e.target.closest('[data-remove-sheet]');
+ if(remove){
+  const record=records.find(r=>r.id===remove.closest('[data-id]').dataset.id);
+  if(!canEdit||!record||saving||remove.disabled||!confirm('این برگه و همهٔ نمونه‌های داخل آن حذف شوند؟'))return;
+  remove.disabled=true;
+  try{
+   await send({action:'delete',id:record.id,revision:record.revision});
+   if(currentId===record.id)document.querySelector('#newSheet').click();
+   status.textContent='برگه از فهرست حذف شد.';
+  }catch(error){status.textContent=error.message}
+  finally{drawArchive()}
+  return;
+ }
  const button=e.target.closest('[data-open]');
  if(!button)return;
  const record=records.find(r=>r.id===button.closest('[data-id]').dataset.id);
  if(!record||saving)return;
  currentRevision=record.revision||0;
- data=JSON.parse(JSON.stringify(record.sheet));currentId=record.id;stage=2;furthest=2;openSample=0;review=true;message.textContent='';render(true);
+ data=JSON.parse(JSON.stringify(record.sheet));
+ data.samples=data.samples.map(sample=>({...newSample(),...sample,groups:sample.groups?.length?sample.groups:['']}));
+ currentId=record.id;stage=2;furthest=2;openSample=0;review=true;message.textContent='';render(true);
 });
 document.querySelector('#records').addEventListener('change',async e=>{
  const select=e.target;
  if(select.tagName!=='SELECT')return;
  const id=select.closest('[data-id]').dataset.id;
- if(select.value&&!destinations.includes(select.value))return;
+ if(!canRefer||select.value&&!destinations.some(item=>item.key===select.value))return;
  if(live){
   const record=records.find(entry=>entry.id===id);
   if(!record||select.disabled)return;
@@ -473,7 +606,7 @@ document.querySelector('#records').addEventListener('change',async e=>{
   finally{drawArchive()}
   return;
  }
- if(persist(records.map(record=>record.id===id?{...record,destination:select.value}:record))){
+ if(persist(records.map(record=>record.id===id?{...record,destination:destinations.find(item=>item.key===select.value)?.name||'',destinationKey:select.value}:record))){
   status.textContent=select.value?'مقصد آزمایشی یادداشت شد.':'مقصد آزمایشی پاک شد.';
  }else drawArchive();
 });
@@ -481,14 +614,21 @@ async function send(body){
  const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
  const result=await response.json();
  if(!response.ok)throw new Error(result.error||'ذخیره انجام نشد.');
+ if(body.action==='delete'){records=records.filter(record=>record.id!==body.id);return}
  records=[result.record,...records.filter(record=>record.id!==result.record.id)];
  return result.record;
 }
 async function loadArchive(){
  try{
-  const response=await fetch(endpoint,{cache:'no-store'});
+  const response=await fetch(endpoint+(referralsOnly?'?mode=referrals':''),{cache:'no-store'});
   const result=await response.json();
   if(!response.ok)throw new Error(result.error||'خواندن پرونده‌ها انجام نشد.');
+  canCreate=result.canCreate===true;
+  canEdit=result.canEdit===true;
+  canRefer=result.canRefer===true;
+  destinations=result.destinations;
+  document.querySelector('#newSheet').hidden=!canCreate;
+  render();
   const current=new Map(records.map(record=>[record.id,record]));
   for(const record of result.records){
    if((current.get(record.id)?.revision||0)<record.revision)current.set(record.id,record);
@@ -499,10 +639,11 @@ async function loadArchive(){
 }
 if(live){
  document.querySelector('#previewBadge').hidden=true;
- document.querySelector('#staffIntakeLink').hidden=false;
- document.querySelector('#archiveTitle').textContent='پرونده‌های ذخیره‌شده';
- document.querySelector('#archiveHelp').textContent='برگه‌ها با نام پژوهشگر گروه‌بندی می‌شوند. با نام یا شماره فاکتور جست‌وجو کنید. مقصد به‌صورت یادداشت روی پرونده ذخیره می‌شود.';
- if(embedded)document.querySelector('#archive').open=true;
+ document.querySelector('#staffIntakeLink').hidden=referralsOnly;
+ document.querySelector('#newSheet').hidden=true;
+ document.querySelector('#archiveTitle').textContent=referralsOnly?'برگه‌های ارجاعی نمونه':'پرونده‌های ذخیره‌شده';
+ document.querySelector('#archiveHelp').textContent='برگه‌ها با نام پژوهشگر گروه‌بندی می‌شوند. با نام یا شماره فاکتور جست‌وجو کنید.';
+ if(embedded||referralsOnly)document.querySelector('#archive').open=true;
  loadArchive();
 }
 render();drawArchive();

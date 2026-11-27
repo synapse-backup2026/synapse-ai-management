@@ -8,8 +8,9 @@ import {canCoordinate} from '../../../lib/lab-execution-policy';
 export const dynamic='force-dynamic';
 export default async function SampleIntake({searchParams}:{searchParams:Promise<Record<string,string>>}){
  const user=await workspaceUser();
- if(user.laboratory)return <IndependentSampleIntake/>;
  const params=await searchParams;
+ if(params.mode==='referrals')return <ResearcherSampleFormFrame referrals/>;
+ if(user.laboratory)return <IndependentSampleIntake/>;
  const linked=params.legacy==='1'||!!params.id;
  const canOpenResearcherForm=hasDataAccess(user,'sample_intake')||canCoordinate(user)||hasDataAccess(user,'research_supervision');
  if(canOpenResearcherForm&&!linked&&params.mode!=='staff')return <ResearcherSampleFormFrame/>;

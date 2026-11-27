@@ -1,30 +1,40 @@
 'use client';
 
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef} from 'react';
 
-export default function ResearcherSampleFormFrame() {
+export default function ResearcherSampleFormFrame({referrals = false}: {referrals?: boolean}) {
   const frame = useRef<HTMLIFrameElement>(null);
-  const observer = useRef<ResizeObserver | null>(null);
-  const [height, setHeight] = useState(720);
+  const src = referrals ? '/synapse-sample-form.html?mode=referrals' : '/synapse-sample-form.html';
 
-  useEffect(() => () => observer.current?.disconnect(), []);
+  useEffect(() => {
+    const element = frame.current;
+    if (!element) return;
+    let observer: ResizeObserver | undefined;
 
-  function fitForm() {
-    observer.current?.disconnect();
-    const content = frame.current?.contentDocument?.querySelector('main');
-    if (!content) return;
+    function fitForm() {
+      observer?.disconnect();
+      const content = element?.contentDocument?.querySelector('main');
+      if (!content || !element) return;
+      const resize = () => {
+        element.style.height = `${Math.ceil(content.getBoundingClientRect().height)}px`;
+      };
+      resize();
+      observer = new ResizeObserver(resize);
+      observer.observe(content);
+    }
 
-    const measure = () => setHeight(Math.ceil(content.getBoundingClientRect().height));
-    measure();
-    observer.current = new ResizeObserver(measure);
-    observer.current.observe(content);
-  }
+    element.addEventListener('load', fitForm);
+    fitForm();
+    return () => {
+      element.removeEventListener('load', fitForm);
+      observer?.disconnect();
+    };
+  }, [src]);
 
   return <iframe
     ref={frame}
-    src="/synapse-sample-form.html"
+    src={src}
     title="فرم اطلاعات نمونه‌های پژوهشی"
-    onLoad={fitForm}
-    style={{display: 'block', width: '100%', height, border: 0}}
+    style={{display: 'block', width: '100%', height: 720, border: 0}}
   />;
 }
