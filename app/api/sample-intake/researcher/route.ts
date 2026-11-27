@@ -1,3 +1,5 @@
+import { archiveIntake } from "../../../../lib/owner-intake-archive";
+import { canDeleteData } from "../../../../lib/deletion-policy";
 import { z } from "zod";
 import { hasDataAccess } from "../../../../lib/auth-policy";
 import { canCoordinate } from "../../../../lib/lab-execution-policy";
@@ -65,6 +67,7 @@ const destinations = z.enum(["", "انبار", "آزمایشگاه مطالعا�
   "آزمایشگاه میکروبیولوژی", "سایر خدمات آزمایشگاهی"]);
 const id = z.string().uuid();
 const payload = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("delete"), id, revision: z.number().int().positive() }),
   z.object({ action: z.literal("save"), id, revision: z.number().int().nonnegative(), sheet }),
   z.object({ action: z.literal("destination"), id, revision: z.number().int().positive(), destination: destinations }),
 ]);
@@ -78,7 +81,7 @@ async function access() {
   const user = await identity();
   if (!user || user.laboratory) return null;
   const all = user.manager || canCoordinate(user) || hasDataAccess(user, "research_supervision");
-  return all || hasDataAccess(user, "sample_intake") ? { email: user.email, all } : null;
+  return all || hasDataAccess(user, "sample_intake") ? { email: user.email, all, canDelete: canDeleteData(user), actor: user } : null;
 }
 const forbidden = () => json({ error: "دسترسی به برگه‌های پژوهشگر ندارید." }, 403);
 
@@ -87,9 +90,9 @@ export async function GET() {
     const user = await access();
     if (!user) return forbidden();
     const rows = await db().prepare(
-      "SELECT id, sheet, destination, revision, updated_at FROM researcher_sample_sheets WHERE (created_by=? OR ?=1)",
+      "SELECT id, sheet, destination, revision, updated_at FROM researcher_sample_sheets WHERE archived_at IS NULL AND (created_by=? OR ?=1)",
     ).bind(user.email, user.all ? 1 : 0).all<RecordRow>();
-    return json({ records: rows.results.map(publicRecord) });
+    return json({ records: rows.results.map(publicRecord), canDelete: user.canDelete });
   } catch {
     return json({ error: "خواندن پرونده‌ها انجام نشد." }, 500);
   }
@@ -107,22 +110,26 @@ export async function POST(request: Request) {
     const parsed = payload.safeParse(body);
     if (!parsed.success) return json({ error: "مشخصات برگه یا نمونه‌ها کامل و معتبر نیست." }, 400);
     const value = parsed.data;
+    if (value.action === "delete") {
+      if (!user.canDelete) return forbidden();
+      return json(await archiveIntake(user.actor, "researcher", value.id, value.revision));
+    }
     const updatedAt = new Date().toISOString();
     const store = db();
     const scope = [value.id, value.revision, user.email, user.all ? 1 : 0] as const;
     const result = value.action === "destination"
       ? await store.prepare(
-        "UPDATE researcher_sample_sheets SET destination=?, updated_at=?, revision=revision+1 WHERE id=? AND revision=? AND (created_by=? OR ?=1)",
+        "UPDATE researcher_sample_sheets SET destination=?, updated_at=?, revision=revision+1 WHERE id=? AND revision=? AND archived_at IS NULL AND (created_by=? OR ?=1)",
       ).bind(value.destination, updatedAt, ...scope).run()
       : value.revision === 0
         ? await store.prepare(
           "INSERT OR IGNORE INTO researcher_sample_sheets (id, created_by, sheet, updated_at) VALUES (?, ?, ?, ?)",
         ).bind(value.id, user.email, JSON.stringify(value.sheet), updatedAt).run()
         : await store.prepare(
-          "UPDATE researcher_sample_sheets SET sheet=?, updated_at=?, revision=revision+1 WHERE id=? AND revision=? AND (created_by=? OR ?=1)",
+          "UPDATE researcher_sample_sheets SET sheet=?, updated_at=?, revision=revision+1 WHERE id=? AND revision=? AND archived_at IS NULL AND (created_by=? OR ?=1)",
         ).bind(JSON.stringify(value.sheet), updatedAt, ...scope).run();
     const row = await store.prepare(
-      "SELECT id, sheet, destination, revision, updated_at FROM researcher_sample_sheets WHERE id=? AND (created_by=? OR ?=1)",
+      "SELECT id, sheet, destination, revision, updated_at FROM researcher_sample_sheets WHERE id=? AND archived_at IS NULL AND (created_by=? OR ?=1)",
     ).bind(value.id, user.email, user.all ? 1 : 0).first<RecordRow>();
     if (!row) return json({ error: "برگه در دسترس نیست." }, 404);
     if (!result.meta.changes) {
@@ -132,7 +139,8 @@ export async function POST(request: Request) {
       return json({ error: "برگه تغییر کرده است. آن را دوباره از فهرست باز کنید." }, 409);
     }
     return json({ record: publicRecord(row) });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && "status" in error && typeof error.status === "number") return json({ error: error.message }, error.status);
     return json({ error: "ذخیرهٔ برگه انجام نشد." }, 500);
   }
 }

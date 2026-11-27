@@ -1,3 +1,5 @@
+import {archiveIntake} from './owner-intake-archive';
+import {canDeleteData} from './deletion-policy';
 import {db} from './staff-server';
 import {hasDataAccess} from './auth-policy';
 import {canCoordinate} from './lab-execution-policy';
@@ -21,22 +23,22 @@ function sanitizeRecord(row:any,u:any){const d=JSON.parse(row.details).intake_v1
 export async function readStandaloneSampleIntake(u:any,p:URLSearchParams){allow(u);
  const canReadAll=!u.laboratory&&(u.manager||canCoordinate(u)||hasDataAccess(u,'research_supervision'));
  const rows= u.laboratory
- ? (await db().prepare("SELECT r.id,r.revision,r.status,r.created_by,COALESCE(json_extract(w.details,'$.intake_v1.history[0].at'),r.updated_at) AS created_at,w.details FROM staff_records r JOIN staff_work_details w ON w.record_id=r.id WHERE r.kind='sample_intake' AND EXISTS(SELECT 1 FROM json_each(w.details,'$.intake_v1.samples') s WHERE json_extract(s.value,'$.lab_id')=?) ORDER BY r.updated_at DESC LIMIT 200").bind(u.laboratoryId).all()).results
- : canReadAll?(await db().prepare("SELECT r.id,r.revision,r.status,r.created_by,COALESCE(json_extract(w.details,'$.intake_v1.history[0].at'),r.updated_at) AS created_at,w.details FROM staff_records r JOIN staff_work_details w ON w.record_id=r.id WHERE r.kind='sample_intake' ORDER BY r.updated_at DESC LIMIT 200").all()).results
- : (await db().prepare("SELECT r.id,r.revision,r.status,r.created_by,COALESCE(json_extract(w.details,'$.intake_v1.history[0].at'),r.updated_at) AS created_at,w.details FROM staff_records r JOIN staff_work_details w ON w.record_id=r.id WHERE r.kind='sample_intake' AND (r.created_by=? OR r.assignee=?) ORDER BY r.updated_at DESC LIMIT 200").bind(u.email,u.email).all()).results;
+ ? (await db().prepare("SELECT r.id,r.revision,r.status,r.created_by,COALESCE(json_extract(w.details,'$.intake_v1.history[0].at'),r.updated_at) AS created_at,w.details FROM staff_records r JOIN staff_work_details w ON w.record_id=r.id WHERE r.kind='sample_intake' AND r.status!='archived' AND EXISTS(SELECT 1 FROM json_each(w.details,'$.intake_v1.samples') s WHERE json_extract(s.value,'$.lab_id')=?) ORDER BY r.updated_at DESC LIMIT 200").bind(u.laboratoryId).all()).results
+ : canReadAll?(await db().prepare("SELECT r.id,r.revision,r.status,r.created_by,COALESCE(json_extract(w.details,'$.intake_v1.history[0].at'),r.updated_at) AS created_at,w.details FROM staff_records r JOIN staff_work_details w ON w.record_id=r.id WHERE r.kind='sample_intake' AND r.status!='archived' ORDER BY r.updated_at DESC LIMIT 200").all()).results
+ : (await db().prepare("SELECT r.id,r.revision,r.status,r.created_by,COALESCE(json_extract(w.details,'$.intake_v1.history[0].at'),r.updated_at) AS created_at,w.details FROM staff_records r JOIN staff_work_details w ON w.record_id=r.id WHERE r.kind='sample_intake' AND r.status!='archived' AND (r.created_by=? OR r.assignee=?) ORDER BY r.updated_at DESC LIMIT 200").bind(u.email,u.email).all()).results;
  const all=rows.map((row:any)=>sanitizeRecord(row,u));
  const q=String(p.get('q')||'').trim().toLocaleLowerCase().slice(0,150);
  const records=q?all.filter((x:any)=>[x.researcher_name,x.project_title,x.organization,x.id,...x.samples.map((s:any)=>s.name)].join(' ').toLocaleLowerCase().includes(q)):all;
  const laboratories=!u.laboratory?(await db().prepare("SELECT id,name,type,status FROM laboratories WHERE status='active' ORDER BY name LIMIT 200").all()).results:[];
- return {records,selected:records.find((x:any)=>x.id===p.get('id'))||null,laboratories,can_create:intakeAccess(u),can_assign:assignAccess(u),laboratory:!!u.laboratory};
+ return {records,selected:records.find((x:any)=>x.id===p.get('id'))||null,laboratories,can_delete:canDeleteData(u),can_create:intakeAccess(u),can_assign:assignAccess(u),laboratory:!!u.laboratory};
 }
 async function getRecord(u:any,id:string){check(/^sample-intake:[a-f0-9]{64}$/.test(id),'شناسه معتبر نیست.',400);
- const row=await db().prepare("SELECT r.*,w.details FROM staff_records r JOIN staff_work_details w ON w.record_id=r.id WHERE r.id=? AND r.kind='sample_intake'").bind(id).first<any>();
+ const row=await db().prepare("SELECT r.*,w.details FROM staff_records r JOIN staff_work_details w ON w.record_id=r.id WHERE r.id=? AND r.kind='sample_intake' AND r.status!='archived'").bind(id).first<any>();
  check(row,'برگه نمونه پیدا نشد.',404);
  const d=JSON.parse(row.details).intake_v1;check(d&&Array.isArray(d.samples),'برگه نمونه معتبر نیست.',409);
  check(u.manager||canCoordinate(u)||hasDataAccess(u,'research_supervision')||!u.laboratory&&(row.created_by===u.email||row.assignee===u.email)||u.laboratory&&d.samples.some((s:any)=>s.lab_id===u.laboratoryId),'مجوز مشاهده این برگه وجود ندارد.',403);
  return {row,d};}
-export async function writeStandaloneSampleIntake(u:any,b:any){allow(u);check(str(b.key,160),'شناسه درخواست لازم است.',400);
+export async function writeStandaloneSampleIntake(u:any,b:any){allow(u);if(b.action==='delete')return archiveIntake(u,'staff',b.id,b.revision);check(str(b.key,160),'شناسه درخواست لازم است.',400);
  const now=stamp();
  if(b.action==='create'){
   check(intakeAccess(u)&&!u.laboratory,'ثبت اولیه با پذیرش مجاز است.',403);

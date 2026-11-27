@@ -130,7 +130,7 @@ const confirmText='تأیید می‌کنم اطلاعات نمونه‌ها ص�
 const stageNames=['مشخصات پژوهشگر','اطلاعات نمونه‌ها','شرایط و تأیید'];
 const live=/^https?:$/.test(location.protocol)&&location.pathname==='/synapse-sample-form.html';
 const endpoint='/api/sample-intake/researcher';
-let currentRevision=0, saving=false;
+let currentRevision=0, saving=false, canDelete=false;
 const storageKey='synapse-sample-form-preview-v1';
 const oldAssays=[1,2,3,4,5,6];
 const form=document.querySelector('#wizard');
@@ -424,14 +424,27 @@ function drawArchive(){
  document.querySelector('#archiveCount').textContent=fa(records.length);
  document.querySelector('#records').innerHTML=view.length?view.map(record=>{
   const sheet=record.sheet, heading=sheet.name.trim(), newGroup=group!==heading;group=heading;
-  return (newGroup?`<h3><bdi>${safe(heading)}</bdi></h3>`:'')+`<div class="record" data-id="${safe(record.id)}"><div><bdi>${safe(sheet.invoice||'بدون شماره فاکتور')}</bdi> <small>· ${fa(totalContainers(sheet))} ظرف / نمونه</small></div><div class="row"><button type="button" data-open>باز کردن</button><select aria-label="مقصد پرونده"><option value="">${live?'انتخاب مقصد':'مقصد آزمایشی'}</option>${destinations.map(v=>`<option${record.destination===v?' selected':''}>${v}</option>`).join('')}</select></div></div>`;
+  return (newGroup?`<h3><bdi>${safe(heading)}</bdi></h3>`:'')+`<div class="record" data-id="${safe(record.id)}"><div><bdi>${safe(sheet.invoice||'بدون شماره فاکتور')}</bdi> <small>· ${fa(totalContainers(sheet))} ظرف / نمونه</small></div><div class="row"><button type="button" data-open>باز کردن</button>${canDelete?'<button type="button" data-delete>حذف از فهرست</button>':''}<select aria-label="مقصد پرونده"><option value="">${live?'انتخاب مقصد':'مقصد آزمایشی'}</option>${destinations.map(v=>`<option${record.destination===v?' selected':''}>${v}</option>`).join('')}</select></div></div>`;
  }).join('')+`<div class="actions"><button type="button" data-page="-1" ${page===0?'disabled':''}>صفحهٔ قبل</button><small>${fa(page+1)} از ${fa(Math.ceil(matches.length/size))}</small><button type="button" data-page="1" ${(page+1)*size>=matches.length?'disabled':''}>صفحهٔ بعد</button></div>`:'<p class="hint">پرونده‌ای برای نمایش وجود ندارد.</p>';
 }
 search.addEventListener('input',()=>{page=0;drawArchive()});
 document.querySelector('#newSheet').addEventListener('click',()=>{if(saving)return;data=newSheet();currentId=sheetId();currentRevision=0;furthest=0;openSample=0;go(0)});
-document.querySelector('#records').addEventListener('click',e=>{
+document.querySelector('#records').addEventListener('click',async e=>{
  const pager=e.target.closest('[data-page]');
  if(pager){page+=Number(pager.dataset.page);drawArchive();return}
+ const remove=e.target.closest('[data-delete]');
+ if(remove){
+  const item=records.find(r=>r.id===remove.closest('[data-id]').dataset.id);
+  if(!canDelete||!item||saving||remove.disabled||!confirm('این برگه از فهرست حذف شود؟'))return;
+  remove.disabled=true;
+  try{
+   await send({action:'delete',id:item.id,revision:item.revision});
+   if(currentId===item.id)document.querySelector('#newSheet').click();
+   status.textContent='برگه از فهرست حذف شد.';
+  }catch(error){status.textContent=error.message}
+  finally{drawArchive()}
+  return;
+ }
  const button=e.target.closest('[data-open]');
  if(!button)return;
  const record=records.find(r=>r.id===button.closest('[data-id]').dataset.id);
@@ -465,6 +478,7 @@ async function send(body){
  const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
  const result=await response.json();
  if(!response.ok)throw new Error(result.error||'ذخیره انجام نشد.');
+ if(body.action==='delete'){records=records.filter(record=>record.id!==body.id);return}
  records=[result.record,...records.filter(record=>record.id!==result.record.id)];
  return result.record;
 }
@@ -473,6 +487,7 @@ async function loadArchive(){
   const response=await fetch(endpoint,{cache:'no-store'});
   const result=await response.json();
   if(!response.ok)throw new Error(result.error||'خواندن پرونده‌ها انجام نشد.');
+  canDelete=result.canDelete===true;
   const current=new Map(records.map(record=>[record.id,record]));
   for(const record of result.records){
    if((current.get(record.id)?.revision||0)<record.revision)current.set(record.id,record);

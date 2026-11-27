@@ -16,7 +16,7 @@ export function classifyCommunication(b:any){const text=String(b.title||'')+' '+
  return {family:family.id,role,roles:[...roles],triage:family.id==='A18',sensitive:['A04','A15','A16'].includes(id)||/رمز|کد ورود|گردش حساب|محرمانه/.test(text),unsafe:/\.(exe|js|bat|cmd|scr|ps1)(\?|$)/i.test(JSON.stringify(b.attachments||[]))||/هرزنامه|اسپم|فیشینگ/.test(text)};
 }
 export function requestRouting(r:any){try{return typeof r.routing==='string'?JSON.parse(r.routing):r.routing||null}catch{return null}}
-export function mayReadRequest(u:any,r:any){if(!u)return false;const m=requestRouting(r);if(!m)return false;if(u.manager&&u.email==='ekramiihamid@gmail.com')return true;if(u.laboratory)return !!m.laboratoryId&&m.laboratoryId===u.laboratoryId&&(m.sourceLab===true||!!m.jobId);const role=organizationalCode(u.username||u.organizationalUsername||'');
+export function mayReadRequest(u:any,r:any){if(!u||r?.archived_at)return false;const m=requestRouting(r);if(!m)return false;if(u.manager&&u.email==='ekramiihamid@gmail.com')return true;if(u.laboratory)return !!m.laboratoryId&&m.laboratoryId===u.laboratoryId&&(m.sourceLab===true||!!m.jobId);const role=organizationalCode(u.username||u.organizationalUsername||'');
  if(m.unifiedIntake){
   const senior=role==='research_manager'&&hasDataAccess(u,'research_supervision')&&seniorResearchMayReview(m.unifiedIntake.category);
   if(!senior&&!hasDataAccess(u,unifiedRequiredAccess(m.unifiedIntake.category)))return false;

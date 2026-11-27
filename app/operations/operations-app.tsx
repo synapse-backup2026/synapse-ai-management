@@ -196,6 +196,10 @@ export default function OperationsApp({initialData,initialFilters={}}:{initialDa
    onHistory={()=>setModal('')}
    onReply={async draft=>{if(busy||!comment.trim())return;if(await save({action:draft?'dispatch_reply':'comment',id:selected.id,body:comment,...(draft?{delivery_status:'draft',channel:selected.channel}:{})}))await open(selected);}}
   />
+  {messageReady&&canDeleteData(u)&&<button className="secondary" type="button" disabled={busy} onClick={async()=>{
+   if(!window.confirm('این ارتباط از فهرست سیناپس حذف شود؟'))return;
+   if(await save({action:'delete',id:selected.id,revision:Number(selected.revision)})){detailId.current='';setModal('');setSelected(null)}
+  }}>حذف از فهرست</button>}
   {sourceVisible&&(canEdit||assignable(selected)||canDeleteData(u))&&<details className="ops-message-actions">
    <summary>پیگیری و ارجاع</summary>
    <form id="ops-followup-form" className="form-grid" onSubmit={async e=>{
