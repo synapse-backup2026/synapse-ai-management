@@ -2,7 +2,7 @@ name: Verify final policy
 
 on:
   push:
-    branches: [hostinger-nextjs-fix]
+    branches: [hostinger-nextjs-fix, work/synapse-phase-one]
   pull_request:
     branches: [main]
 

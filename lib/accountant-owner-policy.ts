@@ -1,4 +1,8 @@
+import {isPrimaryOwner} from './work-assignment-policy.ts';
+
 export type PolicyActor = {
+  email?: string | null;
+  local?: boolean;
   username?: string | null;
   role?: string | null;
   manager?: boolean;
@@ -46,11 +50,11 @@ const normalized = (value: unknown) => String(value ?? '').trim().toLowerCase();
 
 export function isOwner(actor: PolicyActor | null | undefined): boolean {
   if (!actor || actor.active === false) return false;
-  return actor.owner === true || normalized(actor.role) === 'owner' || normalized(actor.username) === 'owner';
+  return isPrimaryOwner(actor);
 }
 
 export function isAccountant(actor: PolicyActor | null | undefined): boolean {
-  return Boolean(actor && actor.active !== false && normalized(actor.username) === ACCOUNTANT_USERNAME);
+  return Boolean(actor && actor.active !== false && !actor.laboratory && normalized(actor.username) === ACCOUNTANT_USERNAME);
 }
 
 export function isSpecialist(actor: PolicyActor | null | undefined): boolean {
