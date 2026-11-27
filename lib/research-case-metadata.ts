@@ -1,3 +1,4 @@
+import {responsibilityLabel} from './unified-intake-taxonomy.ts';
 /** Unified research-case metadata; stored on the existing laboratory mother case. */
 export const projectKinds = [
  {id:'research',title:'پژوهشی'},
@@ -11,15 +12,16 @@ export const projectPriorities = [
  {id:'urgent',title:'فوری'},
 ] as const;
 export const projectResponsibilityTypes = [
- {id:'senior_projects',title:'مدیر ارشد پروژه‌های پژوهشی'},
- {id:'technical_head',title:'مسئول فنی پژوهشکده'},
- {id:'scientific_lead',title:'مسئول علمی پروژه'},
+ {id:'senior_projects',title:responsibilityLabel('executive_director')!},
+ {id:'technical_head',title:responsibilityLabel('research_manager')!},
+ {id:'scientific_lead',title:responsibilityLabel('scientific_manager')!},
  {id:'research_specialist',title:'کارشناس پژوهشی'},
  {id:'laboratory_manager',title:'مدیر آزمایشگاه مربوطه'},
 ] as const;
+export const selectableProjectResponsibilities=projectResponsibilityTypes.filter(option=>option.id!=='research_specialist'&&option.id!=='laboratory_manager');
 export const projectApproverTypes = [
- {id:'institute_management',title:'مدیریت پژوهشکده'},
- {id:'senior_projects',title:'مدیر ارشد پروژه‌های پژوهشی'},
+ {id:'institute_management',title:responsibilityLabel('management')!},
+ {id:'senior_projects',title:responsibilityLabel('executive_director')!},
 ] as const;
 export const projectExecutionStatuses = [
  {id:'pending_management',title:'در انتظار تأیید مدیریت'},
