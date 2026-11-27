@@ -20,10 +20,11 @@ test('exact central ten-category catalog exists with six service and four consul
 });
 test('unapproved employee mappings never randomly fall back to owner',()=>{
  assert.match(route,/unified_pending_/);
- assert.ok(engine.includes('main=(unified||previous?.unifiedIntake)&&initialPosition.missing'));
- assert.match(engine,/m\.unifiedIntake&&baseTarget\.missing\?\{\.\.\.baseTarget,member:''\}/);
+ assert.ok(engine.includes('main=await eligibleIntakePosition(initialPosition'));
+ assert.match(engine,/eligibleIntakePosition\(baseTarget,m\.unifiedIntake\)/);
  assert.match(engine,/unifiedIntake:m\.unifiedIntake\|\|null/);
- assert.ok(engine.includes('d.unifiedIntake&&rawP.missing'));
+ assert.ok(engine.includes('eligibleIntakePosition(rawP,d.unifiedIntake)'));
+ assert.match(engine,/hasDataAccess\(member,unifiedRequiredAccess/);
 });
 test('tickets and manually classified intake share original idempotent dispatch engine',()=>{
  assert.match(api,/submitSupportTicket\(u,b\)/);

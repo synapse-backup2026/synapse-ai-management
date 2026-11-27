@@ -1,4 +1,4 @@
-import {unifiedIntakeCategories} from './unified-intake-taxonomy.ts';
+import {intakeResponsibleRoles,unifiedIntakeCategories} from './unified-intake-taxonomy.ts';
 // Filter-only compatibility. Never writes metadata, changes ownership or grants access.
 const quote=(v:string)=>"'"+v.replace(/'/g,"''")+"'";
 const legacy:Record<string,Record<string,string>>={
@@ -37,4 +37,4 @@ const exactCases=unifiedIntakeCategories.flatMap(c=>c.topics.map(t=>{
  return "WHEN "+filterCategorySQL+"="+quote(c.id)+" AND "+topic+"="+quote(t.title)+" THEN "+quote(t.role);
 })).join(' ');
 // Topic and safe historical subtype mappings are for display only.
-export const filterRoleSQL="(CASE WHEN "+explicitRole+" IS NOT NULL THEN "+explicitRole+" "+exactCases+" WHEN "+filterCategorySQL+"='consult_before' AND subtype='مشاوره پیش از سفارش' THEN 'technical_project' ELSE NULL END)";
+export const filterRoleSQL="(CASE WHEN "+explicitRole+" IN ("+intakeResponsibleRoles.map(r=>quote(r.id)).join(',')+") THEN "+explicitRole+" "+exactCases+" WHEN "+filterCategorySQL+"='consult_before' AND subtype='مشاوره پیش از سفارش' THEN 'technical_project' ELSE NULL END)";

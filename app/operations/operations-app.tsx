@@ -1,7 +1,7 @@
 'use client';
 import {memberPositionLabel} from '../../lib/ticket-staff-desk';
 import {canDeleteData} from '../../lib/deletion-policy';
-import {intakeResponsibleRoles,unifiedIntakeCategories} from '../../lib/unified-intake-taxonomy';
+import {intakeResponsibleRoles,responsibilityLabel,unifiedIntakeCategories} from '../../lib/unified-intake-taxonomy';
 import {TicketSupportCreate} from '../../components/operations/ticket-support-create';
 import {HeaderControls,ResearcherPreview,TicketListSkeleton,TicketError,TicketEmpty} from '../../components/operations/ticket-v3-states';
 import {ticketSourceLabel} from '../../lib/ticket-sources-mapping';
@@ -95,7 +95,7 @@ export default function OperationsApp({initialData,initialFilters={}}:{initialDa
  if(view==='dispatch')return <CommunicationEngine/>;
  if(!data)return <div className="loading">{error?<TicketError onRetry={()=>void refresh()}/>:<TicketListSkeleton/>}</div>;
  const u=data.user,canCall=u.manager||hasDataAccess(u,'calls'),allowed=data.categories.filter((c:any)=>c.allowed),canEdit=selected&&(u.manager||!selected.assignee||selected.assignee===u.email);
- const name=(key:string)=>data.members.find((m:any)=>m.email===key)?.name||(['management','ekramiihamid@gmail.com'].includes(key)?'مدیریت':key==='sync'?'همگام‌سازی':key||'بدون مسئول');
+ const name=(key:string)=>data.members.find((m:any)=>m.email===key)?.name||(['management','ekramiihamid@gmail.com'].includes(key)?responsibilityLabel('management'):key==='sync'?'همگام‌سازی':key||'بدون مسئول');
  const eligible=(record:any)=>data.members.filter((m:any)=>mayAssignWork(u,m.email,modal==='create'?undefined:record?.assignee)&&(!requestRouting(record)?.ownerRole||!!requestRouting(record)?.unifiedIntake||m.manager||organizationalCode(m.username||'')===requestRouting(record).ownerRole)&&canUseOpsCategory(m,{...record,access_scope:record.access_scope||record.accessScope||requestedAccessScope(m,{...record,category:record.category||data.categories.find((c:any)=>c.items.includes(record.subtype))?.id},''),category:record.category||data.categories.find((c:any)=>c.items.includes(record.subtype))?.id}));
  const assignable=(item:any)=>(data.manualAssignment||(!u.laboratory&&item.assignee===u.email))&&canUseOpsCategory(u,item)&&mayReadRequestSource(u,item)&&(u.manager||!item.assignee||item.assignee===u.email)&&!['closed','done'].includes(item.status);
  const checked=data.items.filter((i:any)=>Object.hasOwn(picked,i.id)),bulkMembers=data.members.filter((m:any)=>checked.length>0&&checked.every((i:any)=>eligible(i).some((x:any)=>x.email===m.email)));

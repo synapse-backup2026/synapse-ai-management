@@ -104,8 +104,8 @@ export async function readOperationsData(u:any,p:URLSearchParams){
  const today=tehranDay();
  const followup=p.get('followup');if(followup==='today'){where+=" AND status!='closed' AND due=?";args.push(today)}else if(followup==='overdue'){where+=" AND status!='closed' AND due!='' AND due<?";args.push(today)}else if(followup==='unassigned'){where+=" AND status!='closed' AND "+unassignedSQL}else if(followup==='unanswered'){where+=" AND status!='closed' AND trim(resolution)=''"}else if(followup==='calls_pending'){where+=" AND status!='closed' AND "+channelSQL+"='phone' AND trim(resolution)=''"}
  // Category facets share the exact authorized result predicate, excluding only their own selection.
- const facetWhere=where,facetArgs=[...args];
  if(unifiedGroup){if(['services','consultation'].includes(unifiedGroup)){where+=' AND '+filterGroupSQL+'=?';args.push(unifiedGroup)}else where+=' AND 1=0'}
+ const facetWhere=where,facetArgs=[...args];
  if(unifiedCategory){if(unifiedCategory==='unclassified')where+=' AND '+filterCategorySQL+' IS NULL';else if(intakeCategory(unifiedCategory)){where+=' AND '+filterCategorySQL+'=?';args.push(unifiedCategory)}else where+=' AND 1=0'}
  if(unifiedTopic){if(intakeCategory(unifiedCategory)?.topics.some(t=>t.title===unifiedTopic)){where+=' AND '+filterTopicSQL+'=?';args.push(unifiedTopic)}else where+=' AND 1=0'}
  const offset=Math.max(0,Number(p.get('offset'))||0);

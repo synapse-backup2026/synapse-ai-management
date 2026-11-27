@@ -18,6 +18,16 @@ export const intakeResponsibleRoles = [
  {id:'it_specialist',label:'کارشناس فناوری اطلاعات'},
 ] as const;
 export type IntakeRoleId = typeof intakeResponsibleRoles[number]['id'];
+export const responsibilityByPosition:Readonly<Record<string,IntakeRoleId>>={
+ management:'director',executive_director:'senior_research',research_manager:'technical_project',
+ scientific_manager:'scientific_project',customer_manager:'scientific_reception',
+ finance_manager:'finance_manager',accountant:'accountant',administration_manager:'administrative',
+ it_security_manager:'it_specialist',
+};
+export function responsibilityLabel(code:string){
+ const id=responsibilityByPosition[code]||code.replace(/^unified_pending_/,'');
+ return intakeResponsibleRoles.find(role=>role.id===id)?.label;
+}
 export type IntakeGroupId = 'services' | 'consultation';
 type Topic = {title:string;role:IntakeRoleId};
 export type UnifiedIntakeCategory = {id:string;group:IntakeGroupId;title:string;topics:Topic[]};
