@@ -79,6 +79,15 @@ dd{margin:0;text-align:end;overflow-wrap:anywhere}
 .calendar-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center;margin-top:4px}
 .calendar-days button{padding:2px;min-height:32px}
 .calendar-days button[aria-pressed=true]{background:#171717;color:#fff}
+:root[data-embedded]{background:transparent}
+[data-embedded] main{max-width:1100px;padding:2px 3px 12px}
+[data-embedded] .shell,[data-embedded] .archive{border-color:#cddedb;box-shadow:0 5px 18px #164b4310}
+[data-embedded] header{background:#edf6f4;border:1px solid #dcebe8;border-radius:12px;padding:10px 13px}
+[data-embedded] .logo{color:#214a46}
+[data-embedded] .steps button[aria-current]{background:#e4f1ed}
+[data-embedded] .sample,[data-embedded] .sample-box{border-color:#d7e5e2}
+[data-embedded] :is(.measure,.summary){background:#edf5f3}
+[data-embedded] .archive>summary{color:#214a46}
 </style>
 </head>
 <body>
@@ -96,7 +105,7 @@ dd{margin:0;text-align:end;overflow-wrap:anywhere}
 <p id="archiveStatus" class="hint" role="status"></p>
 <div id="records"></div>
 </details>
-<a href="/sample-intake?mode=staff" id="staffIntakeLink" hidden>پذیرش نمونه و سوابق کارکنان</a>
+<a href="/sample-intake?mode=staff" target="_parent" id="staffIntakeLink" hidden>پذیرش نمونه و سوابق کارکنان</a>
 </main>
 <script>
 'use strict';
@@ -129,6 +138,8 @@ const destinations=['انبار','آزمایشگاه مطالعات حیوانی
 const confirmText='تأیید می‌کنم اطلاعات نمونه‌ها صحیح است و مجوزها و رضایت‌های لازم، در صورت شمول، اخذ شده‌اند.';
 const stageNames=['مشخصات پژوهشگر','اطلاعات نمونه‌ها','شرایط و تأیید'];
 const live=/^https?:$/.test(location.protocol)&&location.pathname==='/synapse-sample-form.html';
+const embedded=window.parent!==window;
+if(embedded)document.documentElement.dataset.embedded='';
 const endpoint='/api/sample-intake/researcher';
 let currentRevision=0, saving=false;
 const storageKey='synapse-sample-form-preview-v1';
@@ -271,7 +282,12 @@ function render(focus=false){
  document.querySelector('#stepProgress').style.width=stage*50+'%';
  document.querySelector('#steps').innerHTML=stageNames.map((name,i)=>`<li><button type="button" data-stage="${i}" ${stage===i?'aria-current="step"':''} ${i>furthest?'disabled':''}><b>${fa(i+1)}</b>${name}</button></li>`).join('');
  form.innerHTML=[contact,samples,conditionsStep][stage]();
- if(focus){const heading=form.querySelector('[data-heading]');heading.focus({preventScroll:true});window.scrollTo(0,0)}
+ if(focus){
+  const heading=form.querySelector('[data-heading]');
+  heading.focus({preventScroll:true});
+  if(embedded)document.querySelector('main').scrollIntoView({block:'start'});
+  else window.scrollTo(0,0);
+ }
 }
 function go(i){stage=i;review=false;message.textContent='';render(true)}
 function updateField(e){
@@ -485,7 +501,8 @@ if(live){
  document.querySelector('#previewBadge').hidden=true;
  document.querySelector('#staffIntakeLink').hidden=false;
  document.querySelector('#archiveTitle').textContent='پرونده‌های ذخیره‌شده';
- document.querySelector('#archiveHelp').textContent='مقصد به‌صورت یادداشت روی پرونده ذخیره می‌شود.';
+ document.querySelector('#archiveHelp').textContent='برگه‌ها با نام پژوهشگر گروه‌بندی می‌شوند. با نام یا شماره فاکتور جست‌وجو کنید. مقصد به‌صورت یادداشت روی پرونده ذخیره می‌شود.';
+ if(embedded)document.querySelector('#archive').open=true;
  loadArchive();
 }
 render();drawArchive();
