@@ -19,6 +19,9 @@ h2{font-size:18px;margin:0 0 10px}h3{font-size:15px}
 .sub,.hint,small{color:#595959;font-size:.83rem}
 .badge,.count{background:#eee;border-radius:30px;padding:3px 10px;font-size:.77rem;white-space:nowrap}
 .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:8px 0;margin:11px 0 13px;border-block:1px solid #ececec;list-style:none}
+.step-progress{height:4px;margin:0 0 13px;background:#e9efeb;border-radius:99px;overflow:hidden}
+.step-progress span{display:block;width:0;height:100%;background:#15803d;border-radius:inherit;transition:width .18s ease}
+@media(prefers-reduced-motion:reduce){.step-progress span{transition:none}}
 .steps button{display:grid;place-items:center;gap:3px;background:white;border-color:transparent;width:100%;height:100%;font-size:.8rem;padding:6px 4px;line-height:1.4;color:#252525}
 .steps button:disabled{opacity:1;color:#595959}
 .steps button[aria-current]{background:#eee;font-weight:bold}
@@ -83,6 +86,7 @@ dd{margin:0;text-align:end;overflow-wrap:anywhere}
 <section class="shell" aria-labelledby="title">
 <header><div><div class="logo" lang="en">SYNAPSE</div><h1 id="title">فرم اطلاعات نمونه‌های پژوهشی</h1><p class="sub" lang="en">Sample Information Form</p></div><span class="badge" id="previewBadge">پیش‌نمایش</span></header>
 <ol class="steps" id="steps" aria-label="مراحل فرم"></ol>
+<div class="step-progress" aria-hidden="true"><span id="stepProgress"></span></div>
 <p id="message" role="alert"></p>
 <form id="wizard" novalidate></form>
 </section>
@@ -264,6 +268,7 @@ function conditionsStep(){return `<h2 data-heading tabindex="-1">۳. شرایط 
  <label class="check"><input type="checkbox" name="confirmed" ${data.confirmed?'checked':''}>${confirmText}</label>
  <div class="actions"><button type="button" data-action="back">بازگشت و ویرایش نمونه‌ها</button><button id="review" class="primary" ${canReview()?'':'disabled'}>بررسی نهایی برگه نمونه</button></div>`}`}
 function render(focus=false){
+ document.querySelector('#stepProgress').style.width=stage*50+'%';
  document.querySelector('#steps').innerHTML=stageNames.map((name,i)=>`<li><button type="button" data-stage="${i}" ${stage===i?'aria-current="step"':''} ${i>furthest?'disabled':''}><b>${fa(i+1)}</b>${name}</button></li>`).join('');
  form.innerHTML=[contact,samples,conditionsStep][stage]();
  if(focus){const heading=form.querySelector('[data-heading]');heading.focus({preventScroll:true});window.scrollTo(0,0)}
