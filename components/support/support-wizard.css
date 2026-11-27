@@ -51,7 +51,7 @@
 .sw-research-layout .sw-choice strong{font-size:11px}
 .sw-research-layout .sw-choice small{margin-top:2px}
 .sw-blue-information{background:#ecf6ff;border:1px solid #c9e0f3;border-radius:8px;padding:8px;min-width:0}
-.sw-research-layout[data-stage="1"] .sw-blue-information{grid-area:information}
+.sw-research-layout:is([data-stage="1"],[data-stage="2"]) .sw-blue-information{grid-area:information}
 .sw-blue-information fieldset{border:0;padding:0;margin:0;min-width:0}
 .sw-blue-information legend{font-weight:700}
 .sw-blue-information fieldset:disabled{opacity:.76}
@@ -79,7 +79,30 @@
  .sw-research-layout[data-stage="1"]{grid-template-columns:1fr;grid-template-areas:"services" "consultation" "information"}
  .sw-research-layout .services .sw-category-grid,.sw-research-layout .consultation .sw-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-.sw-research-layout:not([data-stage="1"]){grid-template-columns:minmax(150px,27%) minmax(0,1fr);align-items:start}
+.sw-research-layout[data-stage="2"]{
+ grid-template-columns:minmax(150px,24%) minmax(0,1fr);
+ grid-template-areas:"services information";
+ align-items:start;
+}
+.sw-topic-stage h2{font-size:13px;margin:0 0 7px}
+.sw-topic-stage .sw-topics{grid-template-columns:1fr;grid-auto-rows:1fr;gap:5px}
+.sw-topic-stage .sw-choice{
+ justify-content:center;
+ gap:2px;
+ min-height:38px;
+ padding:3px 6px;
+ font-size:11px;
+ line-height:1.35;
+}
+.sw-topic-stage .sw-choice[aria-pressed=true]{border-width:1px;box-shadow:inset 0 0 0 1px #286c86}
+.sw-topic-stage .sw-choice small{font-size:10px}
+.sw-topic-stage .sw-unit{padding:5px 6px;margin:6px 0 0;font-size:10px}
+.sw-selected-topic{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 9px}
+.sw-request-details{margin-top:12px}
+.sw-files ul:empty{display:none}
 .sw-selected-topic{padding:8px;border-radius:8px;border:1px solid #d5e5ee;background:#f7fbfe}
-.sw-selected-topic h2,.sw-selected-topic p{margin:0 0 4px;font-size:11px}
-@media(max-width:580px){.sw-research-layout:not([data-stage="1"]){grid-template-columns:1fr}}
+.sw-selected-topic h2,.sw-selected-topic p{margin:0;font-size:11px}
+@media(max-width:580px){
+ .sw-research-layout[data-stage="2"]{grid-template-columns:1fr;grid-template-areas:"services" "information"}
+ .sw-topic-stage .sw-topics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
