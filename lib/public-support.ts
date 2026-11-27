@@ -40,5 +40,5 @@ export async function publicSupportLimit(scope:string,key:string,max:number){
 
 export async function publicSupportRecord(id:string){
  if(!supportUuid.test(id))return null;
- return db().prepare("SELECT id,request_state,status FROM ops_items WHERE id=? AND CAST(json_extract(source_labels,'$.ticket_public') AS TEXT)='1'").bind(id.toLowerCase()).first<{id:string;request_state:string;status:string}>();
+ return db().prepare("SELECT id,request_state,status FROM ops_items WHERE id=? AND archived_at IS NULL AND CAST(json_extract(source_labels,'$.ticket_public') AS TEXT)='1'").bind(id.toLowerCase()).first<{id:string;request_state:string;status:string}>();
 }

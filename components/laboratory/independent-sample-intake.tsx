@@ -28,6 +28,16 @@ export default function IndependentSampleIntake(){
    else setMessage('اطلاعات ثبت و از پایگاه داده بازخوانی شد.');
   }catch(err:any){setError(err.message)}finally{setBusy(false)}
  }
+ async function deleteSelected(){
+  if(!selected||busy)return;
+  const reason=window.prompt('دلیل بایگانی برگه را وارد کنید.');
+  if(!reason?.trim()||!window.confirm('این برگه در سیناپس بایگانی شود؟'))return;
+  setBusy(true);setError('');setMessage('');
+  try{
+   await parse(await fetch('/api/sample-intake/independent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id:selected.id,revision:selected.revision,reason,confirmed:true})}));
+   setId('');setSampleId('');await load('');setMessage('برگه از فهرست پذیرش حذف شد.');
+  }catch(err:any){setError(err.message)}finally{setBusy(false)}
+ }
  const results=(data?.records||[]).filter((r:Entry)=>!query||[r.researcher_name,r.project_title,r.organization,r.id,...r.samples.map(s=>s.name)].join(' ').toLowerCase().includes(query.toLowerCase()));
  return <section className="independent-intake" dir="rtl" aria-label="پذیرش مستقل نمونه">
   <div className="independent-hero"><div className="independent-hero-icon"><FlaskConical size={28}/></div><div><small>SYNAPSE / SAMPLE REGISTRATION</small><h1>پذیرش نمونه محققین</h1><p>ثبت محقق، پروژه و نمونه بدون الزام شماره پرونده یا فاکتور؛ دریافت و تحویل آزمایشگاه با ثبت تاریخچه مستقل</p></div></div>
@@ -46,6 +56,7 @@ export default function IndependentSampleIntake(){
     </div><button className="independent-primary" disabled={busy}>ثبت و ایجاد برگه نمونه</button>
    </form>}
   {selected&&<div className="independent-selected"><div><b>{selected.researcher_name}</b><span>{selected.project_title}</span><small>شناسه داخلی: <bdi>{selected.id}</bdi> · {fa(selected.samples.length)} قلم نمونه</small></div><button type="button" onClick={()=>{setId('');setSampleId('');setMessage('')}}>برگه جدید / بازگشت به فهرست</button></div>}
+  {selected&&data?.can_delete&&<button type="button" disabled={busy} onClick={()=>void deleteSelected()}>حذف برگه از فهرست</button>}
   {selected&&<div className="independent-panel">
     <h2><FlaskConical size={18}/> برگه مشخصات نمونه‌ها</h2>
     {data?.can_create&&<SampleForm busy={busy} onSubmit={e=>void submit('add_sample',e)} category={category} setCategory={setCategory} laboratories={data.laboratories||[]}/>}

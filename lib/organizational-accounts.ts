@@ -6,7 +6,7 @@ import {organizationalLogins,organizationalCode,organizationalUsernames} from '.
 import {provisionOwnerLogin} from './owner-login';
 import {handoverInventory,previewHandover,executeHandover,recordActivationPreflight,accountPreservation,activationPreflight,identityRenames,retirementAccounts} from './account-handover';
 import {db,eventStmt} from './staff-server';
-import {organizationReady,passwordMinimum,organizationalRuntimeProfile} from './org-access';
+import {ACCOUNT_PERMISSION_LIMIT,organizationReady,passwordMinimum,organizationalRuntimeProfile} from './org-access';
 import {organizationCatalog,orgRoleCatalog,orgRoleKeys,OrgRoleDefinition,orgProfilePermissions,validateOrgDefinition} from './org-role-catalog';
 import {workflowMust as must,WorkflowError,workflowEvent} from './workflow-policy';
 import {OWNER} from './staff-policy';
@@ -24,7 +24,8 @@ export async function readOrganizationalAccounts(u:any,p:URLSearchParams){must(i
  const organization_accounts=organizationCatalog.map(def=>{const username=def.role_key==='management'?'owner':organizationalLogins[def.role_key],a=rows.find(a=>a.username===username),stored=availableRoles.find(r=>r.code===def.role_key)?.definition;
  const definition={...def,...Object.fromEntries(['duties','authority','requires_approval'].map(k=>[k,[...new Set([...(def as any)[k],...(stored?.[k]||[])])]]))};
  const profile=a?organizationalRuntimeProfile({email:a.member_id,username,local:true,permissions:a.stored_permissions,scientificQualified:a.qualified}):null;
- return {...a,username,definition,exists:!!a,permissions:profile?.permissions||[],access:profile?workspaceNavigation({...profile,permissions:effectivePermissions(profile.permissions)}).flatMap(g=>g.items.filter(i=>i.enabled).map(i=>({label:i.label,href:i.href}))):[]};});
+ const permission_options=def.role_key==='management'?[]:orgProfilePermissions([def],!!a?.qualified);
+ return {...a,username,definition,exists:!!a,permission_options,permissions:profile?.permissions||[],access:profile?workspaceNavigation({...profile,permissions:effectivePermissions(profile.permissions)}).flatMap(g=>g.items.filter(i=>i.enabled).map(i=>({label:i.label,href:i.href}))):[]};});
  const accountantRow=rows.find(a=>a.username===ACCOUNTANT_USERNAME);
  const accountantAccess:{label:string;href:string}[]=[];
  if(accountantRow?.active&&!accounts.some(a=>a.username===ACCOUNTANT_USERNAME&&a.laboratory_id)){
@@ -65,7 +66,7 @@ export async function writeOrganizationalAccount(u:any,b:any){must(isPrimaryOwne
   return {ok:true,credential:await createAccount(username,String(b.name||'').trim(),u.email,{permissions:[]})};
  }
  if(b.action==='create'){must(organizationalUsernames.includes(username),'ایجاد حساب سازمانی خارج از نه نام مصوب مجاز نیست.',403);must(username!=='owner','ورود مالک فقط از مسیر اتصال امن هویت مالک ایجاد می‌شود.',403);
-  if(orgRoleCatalog.some(r=>organizationalLogins[r.role_key]===username))must(typeof b.password==='string'&&passwordValid(b.password,await passwordMinimum()),'برای حساب نهایی سازمانی، رمز اولیه معتبر را مدیر تعیین کند.');
+  if(b.password!==undefined)must(typeof b.password==='string'&&passwordValid(b.password,await passwordMinimum()),'رمز اولیه معتبر وارد کنید.');
   must(!await db().prepare('SELECT username FROM staff_accounts WHERE username=?').bind(username).first(),'نام کاربری تکراری است.',409);const options:any={password:b.password};let proposed:any=null;
   if(b.roles!==undefined){must(b.roles.length===1&&b.roles[0]===organizationalCode(username),'نقش حساب باید همان سمت مصوب باشد.');await rolesReady();proposed=await proposal({member_id:'staff:'+username,org_revision:0,permissions:'[]'},b.roles,!!b.qualified);if(b.qualified)must(typeof b.qualification_note==='string'&&b.qualification_note.trim(),'احراز صلاحیت علمی باید با توضیح تأیید شود.');options.permissions=proposed.permissions}
   if(!proposed)return {ok:true,credential:await createAccount(username,String(b.name||'').trim(),u.email,options)};
@@ -73,6 +74,22 @@ export async function writeOrganizationalAccount(u:any,b:any){must(isPrimaryOwne
   await db().batch([...stmts,db().prepare("UPDATE staff_accounts SET org_roles=?,org_proposed_roles=?,org_mode='managed',scientific_qualified=?,org_revision=1 WHERE username=?").bind(JSON.stringify(proposed.roles),JSON.stringify(proposed.roles),proposed.qualified?1:0,username),await eventStmt('auth',u.email,'account-role-create',JSON.stringify({username,roles:proposed.roles,permissions:proposed.permissions,qualification_note:b.qualification_note||''}))]);return {ok:true,credential:{username,name,password}};
  }
  const a=await db().prepare('SELECT a.*,m.role FROM staff_accounts a JOIN staff_members m ON m.email=a.member_id WHERE a.username=?').bind(username).first<any>();must(a,'حساب پیدا نشد.',404);if(b.action!=='role_preview')protect(u,a,b);const ready=await organizationReady();const laboratory=await db().prepare('SELECT laboratory_id FROM laboratory_members WHERE member_id=?').bind(a.member_id).first();
+ if(b.action==='limit_permissions'){
+  await rolesReady();
+  const definition=orgRoleCatalog.find(role=>role.role_key===organizationalCode(username));
+  must(definition&&!laboratory,'فقط حساب سازمانی غیرآزمایشگاهی قابل تنظیم است.',403);
+  const permitted=orgProfilePermissions([definition],!!a.scientific_qualified);
+  must(Array.isArray(b.permissions)&&b.permissions.every((p:unknown)=>typeof p==='string'&&permitted.includes(p)),'مجوز خارج از محدوده سمت است.');
+  must(Number.isSafeInteger(b.revision)&&b.revision===a.org_revision,'نسخه حساب تغییر کرده است.',409);
+  const permissions=[...new Set<string>(b.permissions)].sort();
+  const stamp=ts();
+  const result=await db().batch([
+   db().prepare('UPDATE staff_accounts SET permissions=?,org_revision=org_revision+1,updated_at=? WHERE username=? AND org_revision=?').bind(JSON.stringify([...permissions,ACCOUNT_PERMISSION_LIMIT]),stamp,username,b.revision),
+   db().prepare("INSERT INTO staff_events(id,record_id,actor,action,body,created_at) SELECT ?,?,?,'account-permissions-limited',?,? WHERE changes()=1").bind(crypto.randomUUID(),a.member_id,u.email,JSON.stringify({before:JSON.parse(a.permissions),after:permissions}),stamp),
+  ]);
+  must(result[0].meta.changes===1,'نسخه حساب تغییر کرده است.',409);
+  return {ok:true};
+ }
  if(['roles_save','role_preview','apply_roles'].includes(b.action)){
   if(organizationalCode(username))must(Array.isArray(b.roles)&&b.roles.length===1&&b.roles[0]===organizationalCode(username),'نقش این حساب ثابت و مصوب است.',403);
   await rolesReady();must(!laboratory,'حساب آزمایشگاه مستقل است؛ به پروفایل سازمانی تبدیل نمی‌شود.',409);

@@ -8,7 +8,7 @@ import {OWNER} from './staff-policy';
 // Acceptance records the owner's review; it never confirms money, science or completion.
 export async function acceptOperation(u:any,b:any){
  check(canDeleteData(u),'پذیرش نهایی فقط با مالک اصلی است.',403);
- const r=await db().prepare('SELECT * FROM ops_items WHERE id=?').bind(String(b.id||'')).first<any>();
+ const r=await db().prepare('SELECT * FROM ops_items WHERE id=? AND archived_at IS NULL').bind(String(b.id||'')).first<any>();
  check(r&&canSeeOps(u,r),'درخواست مجاز پیدا نشد.',404);
  const eid='ops-owner-accept:'+r.id,accepted=await db().prepare('SELECT id FROM staff_events WHERE id=?').bind(eid).first();
  if(accepted)return {ok:true,replayed:true,id:r.id};

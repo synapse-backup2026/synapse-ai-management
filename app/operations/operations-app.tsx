@@ -196,6 +196,19 @@ export default function OperationsApp({initialData,initialFilters={}}:{initialDa
    onHistory={()=>setModal('')}
    onReply={async draft=>{if(busy||!comment.trim())return;if(await save({action:draft?'dispatch_reply':'comment',id:selected.id,body:comment,...(draft?{delivery_status:'draft',channel:selected.channel}:{})}))await open(selected);}}
   />
+  {messageReady&&canDeleteData(u)&&<button className="secondary" type="button" disabled={busy} onClick={async()=>{
+   try {
+    const response=await fetch('/api/operations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'archive_preview',id:selected.id})});
+    const preview=await response.json() as {error?:string;documents:number;messages:number;record:{title:string;id:string;revision:number}};
+    if(!response.ok)throw Error(preview.error);
+    if(preview.documents){window.alert('این ارتباط سند مالی فعال دارد و قابل بایگانی نیست.');return;}
+    const reason=window.prompt(`ارتباط: ${preview.record.title} — ${preview.messages} پیام مرتبط حفظ می‌شود. دلیل بایگانی را وارد کنید.`);
+    if(!reason?.trim()||!window.confirm('بایگانی ارتباط تأیید شود؟'))return;
+    if(await save({action:'delete',id:preview.record.id,revision:preview.record.revision,reason,confirmed:true})){detailId.current='';setModal('');setSelected(null)}
+   } catch(error) {
+    window.alert(error instanceof Error?error.message:'بررسی ارتباط انجام نشد.');
+   }
+  }}>حذف از فهرست</button>}
   {sourceVisible&&(canEdit||assignable(selected)||canDeleteData(u))&&<details className="ops-message-actions">
    <summary>پیگیری و ارجاع</summary>
    <form id="ops-followup-form" className="form-grid" onSubmit={async e=>{
