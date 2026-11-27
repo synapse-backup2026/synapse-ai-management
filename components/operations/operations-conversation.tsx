@@ -1,3 +1,4 @@
+import {OperationHistory} from './operation-history';
 import Link from 'next/link';
 import {Phone} from 'lucide-react';
 import {communicationChannels} from '../../lib/communication-policy';
@@ -45,7 +46,7 @@ export default function OperationsConversation({item,ready,sourceVisible,communi
    {phone?<a href={phone} dir="ltr"><Phone size={13}/>{item.phone}</a>:item.phone&&<bdi>{item.phone}</bdi>}
    {item.email&&<bdi>{item.email}</bdi>}
    {item.reference&&<span>شماره سفارش <bdi>{item.reference}</bdi></span>}
-   <span className="ops-conversation-role">{[responsibility,assignedTo].filter(Boolean).join(' · ')}</span>
+   <span className="ops-conversation-role">{[...new Set([responsibility,assignedTo].filter(Boolean))].join(' · ')}</span>
   </div>
 
   <div className="ops-thread" aria-label="گفتگوی پیام">
@@ -77,5 +78,6 @@ export default function OperationsConversation({item,ready,sourceVisible,communi
    </div>
    {feedback&&<p role="alert" className="error-banner">{feedback}</p>}
   </form>
+  <OperationHistory events={events}/>
  </div>;
 }
