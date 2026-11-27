@@ -121,16 +121,23 @@ export async function POST(request: Request) {
         : await store.prepare(
           "UPDATE researcher_sample_sheets SET sheet=?, updated_at=?, revision=revision+1 WHERE id=? AND revision=? AND (created_by=? OR ?=1)",
         ).bind(JSON.stringify(value.sheet), updatedAt, ...scope).run();
+    // A failed conditional UPDATE must never be treated as a successful save,
+    // even if another writer changed the row before the follow-up SELECT.
+    if (!result.meta.changes) {
+      if (value.action === "save" && value.revision === 0) {
+        const existing = await store.prepare(
+          "SELECT id, sheet, destination, revision, updated_at FROM researcher_sample_sheets WHERE id=? AND created_by=?",
+        ).bind(value.id, user.email).first<RecordRow>();
+        if (existing && existing.revision === 1 && existing.sheet === JSON.stringify(value.sheet)) {
+          return json({ record: publicRecord(existing) });
+        }
+      }
+      return json({ error: "برگه تغییر کرده است. آن را دوباره از فهرست باز کنید." }, 409);
+    }
     const row = await store.prepare(
       "SELECT id, sheet, destination, revision, updated_at FROM researcher_sample_sheets WHERE id=? AND (created_by=? OR ?=1)",
     ).bind(value.id, user.email, user.all ? 1 : 0).first<RecordRow>();
     if (!row) return json({ error: "برگه در دسترس نیست." }, 404);
-    if (!result.meta.changes) {
-      if (value.action === "save" && value.revision === 0 && row.sheet === JSON.stringify(value.sheet)) {
-        return json({ record: publicRecord(row) });
-      }
-      return json({ error: "برگه تغییر کرده است. آن را دوباره از فهرست باز کنید." }, 409);
-    }
     return json({ record: publicRecord(row) });
   } catch {
     return json({ error: "ذخیرهٔ برگه انجام نشد." }, 500);
