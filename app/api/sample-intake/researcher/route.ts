@@ -76,7 +76,14 @@ const sheet = z.object({
   invoice: required, email: z.string().trim().max(250).email(),
   samples: z.array(sample).min(1).max(100), delivery: choice(0, 3), temp: choice(0, 3),
   transport: text, biosafety: text, confirmed: z.literal(true),
-});
+  viability: z.enum(["موضوعیت ندارد", "ضروری است", "نیازمند بررسی کارشناس"]),
+  storage: z.enum(["طبق برگهٔ همراه نمونه", "شرایط اختصاصی", "نیازمند بررسی کارشناس"]),
+  storageNotes: text,
+  consumption: z.enum(["فقط بخشی از نمونه", "مصرف کامل مجاز است", "پس از هماهنگی"]),
+  risk: z.enum(["نیازمند بررسی کارشناس", "فاقد خطر شناخته‌شده", "نامشخص"]),
+  remainder: z.enum(["درخواست بازگرداندن نمونه", "درخواست دریافت محصولات", "درخواست دریافت نمونه و محصولات", "هماهنگی با کارشناس", "امحا پس از مهلت"]),
+  policyAccepted: z.tuple([z.literal(true), z.literal(true), z.literal(true)]),
+}).refine((entry) => entry.storage !== "شرایط اختصاصی" || !!entry.storageNotes.trim());
 const warehouse = "انبار نمونه‌های پژوهشی";
 const revision = z.number().int().positive();
 const id = z.string().uuid();
@@ -94,6 +101,7 @@ const fields = "id, sheet, destination, assigned_to, assigned_lab_id, revision, 
 const publicRecord = (row: RecordRow, hideContact = false) => {
   const sheet = JSON.parse(row.sheet);
   if (hideContact) Object.assign(sheet, { email: "", mobile: "", org: "" });
+  delete sheet.acceptanceSignedBy;
   const destination = row.destination === "انبار" ? warehouse : row.destination;
   return {
     id: row.id, sheet, destination,
@@ -201,18 +209,24 @@ export async function POST(request: Request) {
       if (value.action === "delete") return result.meta.changes
         ? json({ ok: true }) : json({ error: "برگه پیدا نشد یا تغییر کرده است." }, 409);
     } else {
+      const signedSheet = JSON.stringify({
+        ...value.sheet,
+        acceptanceVersion: 1,
+        acceptanceSignedAt: updatedAt,
+        acceptanceSignedBy: user.email,
+      });
       result = value.revision === 0
         ? await store.prepare("INSERT OR IGNORE INTO researcher_sample_sheets (id, created_by, sheet, updated_at) VALUES (?, ?, ?, ?)")
-          .bind(value.id, user.email, JSON.stringify(value.sheet), updatedAt).run()
+          .bind(value.id, user.email, signedSheet, updatedAt).run()
         : await store.prepare("UPDATE researcher_sample_sheets SET sheet=?, updated_at=?, revision=revision+1 WHERE id=? AND revision=? AND deleted_at IS NULL")
-          .bind(JSON.stringify(value.sheet), updatedAt, ...scope).run();
+          .bind(signedSheet, updatedAt, ...scope).run();
     }
     const row = await store.prepare(
       `SELECT ${fields} FROM researcher_sample_sheets WHERE id=? AND deleted_at IS NULL AND (created_by=? OR ?=1)`,
     ).bind(value.id, user.email, all ? 1 : 0).first<RecordRow>();
     if (!row) return json({ error: "برگه در دسترس نیست." }, 404);
     if (!result.meta.changes) {
-      if (value.action === "save" && value.revision === 0 && row.sheet === JSON.stringify(value.sheet)) {
+      if (value.action === "save" && value.revision === 0 && JSON.stringify(sheet.safeParse(JSON.parse(row.sheet)).data) === JSON.stringify(value.sheet)) {
         return json({ record: publicRecord(row) });
       }
       return json({ error: "برگه تغییر کرده است. آن را دوباره از فهرست باز کنید." }, 409);
