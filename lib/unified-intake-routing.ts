@@ -3,6 +3,7 @@ import {intakeDefaultResponsibility,type IntakeRoleId} from './unified-intake-ta
 /** Exact operational positions only. The nine display labels never grant account access.
  * For split, project-specific or vacant roles, always queue manager triage instead. */
 const exactApprovedPositions:Partial<Record<IntakeRoleId,string>>={
+ scientific_reception:'customer_manager',
  finance_manager:'finance_manager',
  administrative:'administration_manager',
  it_specialist:'it_security_manager',
