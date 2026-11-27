@@ -41,7 +41,7 @@ function OrganizationAccount({a,minimum,busy,action,copy,credential,clear}:any){
    <span className={a.active?'account-status active':'account-status'}>{!a.exists?'حساب موجود نیست':a.active?'فعال':'غیرفعال'}</span>
   </summary>
   <div className="synapse-account-body">
-   {!a.exists&&!accountant&&<p className="hint">این کارت فقط تعریف سمت است؛ ابتدا حساب معتبر مبدأ را منتقل کنید.</p>}
+   {!a.exists&&!accountant&&<p className="hint">برای این سمت هنوز حسابی ثبت نشده است.</p>}
    {responsibility?.status==='needs-review'&&<p className="hint">عنوان مصوب نمایش داده می‌شود؛ انتصاب عملی و اختیارات تخصصی باید جداگانه احراز شوند.</p>}
    <p><b>ورود:</b> {!a.exists?'نیازمند بررسی مدیریت':!a.active?'غیرفعال':a.must_change?'فعال؛ تغییر رمز در اولین ورود':'فعال؛ رمز شخصی تنظیم شده'}</p>
    {a.credential_pending&&<p className="notice">اطلاعات حساب منتقل شده؛ اعتبار رمز قبلی نیازمند بررسی است.</p>}
@@ -58,6 +58,26 @@ function OrganizationAccount({a,minimum,busy,action,copy,credential,clear}:any){
    </div>
    <div className="synapse-account-section synapse-account-actions">
    <div className="nine-account-actions"><button className="secondary" disabled={busy||!a.exists} onClick={()=>{clear();setEdit(!edit);setReset(false)}}>ویرایش مشخصات</button><>{a.username==='owner'?<a className="secondary" href="/account/password">تغییر رمز حساب من</a>:<button className="secondary" disabled={busy||!a.exists} onClick={()=>{clear();setReset(!reset);setEdit(false)}}>تنظیم / بازنشانی رمز</button>}</><button className="secondary" disabled={busy||!a.exists||(!a.can_copy_initial&&!credential)} onClick={()=>copy(a.username)}>کپی امن رمز اولیه</button></div>{edit&&<form className="form-grid" onSubmit={async e=>{e.preventDefault();const name=new FormData(e.currentTarget).get('name');if(await action({action:'managed_edit',username:a.username,name}))setEdit(false)}}><label>نام فرد منصوب<input name="name" defaultValue={a.name} required maxLength={100}/></label><p>عنوان سمت و نام ورود ثابت می‌مانند؛ شناسه و سوابق تغییر نمی‌کنند.</p><button className="primary" disabled={busy}>ذخیره مشخصات</button></form>}{reset&&<form className="form-grid" onSubmit={async e=>{e.preventDefault();const form=e.currentTarget,password=new FormData(form).get('password');if(!confirm('رمز همین حساب تغییر می‌کند و نشست‌های قبلی آن نامعتبر می‌شوند. تأیید می‌کنید؟'))return;if(await action({action:'managed_reset',username:a.username,password:password||undefined})){form.reset();setReset(false)}}}><label>رمز جدید؛ خالی برای تولید امن<input name="password" type="password" dir="ltr" minLength={minimum} maxLength={128} autoComplete="new-password"/></label><p>رمز جدید به‌صورت رمزگذاری‌شده برای تحویل مالک نگهداری می‌شود؛ تغییر آن در اولین ورود الزامی است.</p><button className="primary" disabled={busy}>ثبت رمز و بستن نشست‌های قبلی</button></form>}{credential&&<div className="credential-box"><p>رمز اولیه جدید <code>{a.username}</code></p><input type="password" readOnly value={credential.password} autoComplete="off" aria-label={'رمز اولیه '+a.username}/><button className="secondary" onClick={()=>copy(a.username)}>کپی امن رمز جدید</button><button className="secondary" onClick={clear}>بستن اطلاعات رمز</button></div>}
+   {!accountant && a.username!=='owner' && !a.exists && <form className="form-grid" onSubmit={e=>{
+    e.preventDefault();
+    const form=new FormData(e.currentTarget);
+    void action({action:'create',username:a.username,name:form.get('name'),roles:[d.role_key]});
+   }}>
+    <label>نام فرد منصوب<input name="name" required maxLength={100}/></label>
+    <button className="primary" disabled={busy}>ساخت حساب و تولید رمز اولیه</button>
+   </form>}
+   {!accountant && a.exists && !!a.permission_options?.length && <details>
+    <summary>تنظیم مجوزهای این حساب</summary>
+    <form key={a.revision} onSubmit={e=>{
+     e.preventDefault();
+     const permissions=new FormData(e.currentTarget).getAll('permissions');
+     void action({action:'limit_permissions',username:a.username,revision:a.revision,permissions});
+    }}>
+     <p>مجوزهای این حساب در محدوده سمت تعیین می‌شوند. دسترسی پرونده‌ها تابع مسئولیت و مجوز همان پرونده است.</p>
+     {a.permission_options.map((permission:string)=><label key={permission}><input type="checkbox" name="permissions" value={permission} defaultChecked={a.permissions.includes(permission)}/> <code>{permission}</code></label>)}
+     <button className="primary" disabled={busy}>ذخیره مجوزها</button>
+    </form>
+   </details>}
    {accountant && !a.exists && <form className="form-grid" onSubmit={e=>{
     e.preventDefault();
     const name=new FormData(e.currentTarget).get('name');

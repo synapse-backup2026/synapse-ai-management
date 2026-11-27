@@ -1,0 +1,1 @@
+ALTER TABLE ops_items ADD COLUMN IF NOT EXISTS archived_at TEXT;

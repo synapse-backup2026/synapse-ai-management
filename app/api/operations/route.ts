@@ -1,3 +1,4 @@
+import {archiveIntake,previewOperationArchive} from '../../../lib/owner-intake-archive';
 import {acceptOperation} from '../../../lib/operations-owner-accept';
 import {operationWorkStatements,operationCommentStatements} from '../../../lib/operation-work-link';
 import {assignOperationsManually} from '../../../lib/operations-manual-assignment';
@@ -31,6 +32,8 @@ export async function POST(req:Request){
   if(b.assignee&&String(b.assignmentReason||'').trim().length<4)return json({error:'برای تعیین مسئول دستی باید دلیل ثبت شود.'},400);
   b.phone=b.phone?normalizeIranPhone(String(b.phone)):'';b.email=String(b.email||'').trim().toLowerCase();
  }
+ if(b.action==='archive_preview'){try{return json(await previewOperationArchive(u,b.id))}catch(e:any){return json({error:e.status?e.message:'بررسی وابستگی‌ها انجام نشد.'},e.status||500)}}
+ if(b.action==='delete'){try{return json(await archiveIntake(u,'operation',b.id,b.revision,b.reason,b.confirmed))}catch(e:any){return json({error:e.status?e.message:'حذف از فهرست انجام نشد.'},e.status||500)}}
  if(b.action==='owner_accept'){try{return json(await acceptOperation(u,b))}catch(e:any){return json({error:e.status?e.message:'پذیرش ثبت نشد.'},e.status||400)}}if(b.action==='manual_assign'){try{return json(await assignOperationsManually(u,b))}catch(e:any){return json({error:e.status?e.message:'ارجاع ذخیره نشد.'},e.status||400)}}if(String(b.action).startsWith('dispatch_')||b.action==='create'&&await dispatchReady()){try{
  const result=await dispatchWrite(u,{...b,action:b.action==='create'?'dispatch_create':b.action});
  if(b.action==='create'&&String(b.sourceKey||'').startsWith('intake:')&&!result.replayed&&result.id){
