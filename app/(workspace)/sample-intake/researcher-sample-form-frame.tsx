@@ -34,7 +34,7 @@ export default function ResearcherSampleFormFrame({referrals = false}: {referral
   return <iframe
     ref={frame}
     src={src}
-    title="فرم اطلاعات نمونه‌های پژوهشی"
+    title="برگهٔ تحویل و اطلاعات نمونه‌های محقق"
     style={{display: 'block', width: '100%', height: 720, border: 0}}
   />;
 }

@@ -17,12 +17,12 @@ function datePart(date: Date, part: Intl.DateTimeFormatPartTypes) {
   return Number(calendar.formatToParts(date).find((entry) => entry.type === part)?.value);
 }
 
-function validDate(year: string, month: string, day: string) {
+function validDate(year: string, month: string, day: string, expiry: boolean) {
   if (!/^\d{4}$/.test(year) || !/^(?:[1-9]|1[0-2])$/.test(month) || !/^[1-9]\d?$/.test(day)) return false;
   const y = Number(year);
   const m = Number(month);
   const d = Number(day);
-  if (y < 1200 || y > datePart(new Date(), "year") + 1) return false;
+  if (y < 1200 || y > datePart(new Date(), "year") + (expiry ? 20 : 1)) return false;
   if (m < 7) return d <= 31;
   if (m < 12) return d <= 30;
   if (d <= 29) return true;
@@ -43,7 +43,7 @@ function validQuantity(countInput: string, amountInput: string) {
 }
 
 const material = z.object({
-  kind: choice(0, 3), name: required, count: z.string().max(32), amount: z.string().max(80), unit: choice(0, 6),
+  kind: choice(0, 6), name: required, count: z.string().max(32), amount: z.string().max(80), unit: choice(0, 6),
 }).refine((item) => validQuantity(item.count, item.amount));
 
 const sample = z.object({
@@ -51,13 +51,17 @@ const sample = z.object({
   groups: z.array(z.string().max(250)).max(100), markerMode: choice(0, 3), markers: text,
   count: z.string().max(32), amount: z.string().max(80), unit: choice(0, 6),
   condition: choice(0, 4), container: text, year: z.string(), month: z.string(), day: z.string(),
-  supplyMode: choice(1, 3), materials: z.array(material).max(100),
+  dateKind: z.enum(['', 'collection', 'expiry']).optional(),
+  hour: z.string().regex(/^(?:|[01]\d|2[0-3])$/).optional(), minute: z.string().regex(/^(?:|[0-5]\d)$/).optional(),
+  supplyMode: choice(1, 3), materials: z.array(material).max(100), materialsConfirmed: z.boolean().optional(),
   assays: z.array(choice(0, 6)).min(1).max(7), otherTechnique: text, notes: text,
 }).refine((s) => {
   return (s.type !== 10 || !!s.name.trim()) && (s.species !== 6 || !!s.originNotes.trim())
     && s.groups.length > 0 && s.groups.every((group) => !!group.trim())
-    && validQuantity(s.count, s.amount) && validDate(s.year, s.month, s.day)
-    && (s.supplyMode === 1 ? s.materials.length > 0 : s.materials.length === 0)
+    && validQuantity(s.count, s.amount) && validDate(s.year, s.month, s.day, s.type === 8)
+    && (!!s.hour === !!s.minute) && (!s.hour || s.type === 0)
+    && (s.type === 8 ? s.dateKind === "expiry" : s.dateKind !== "expiry")
+    && (s.supplyMode === 1 ? s.materials.length > 0 && s.materialsConfirmed === true : s.materials.length === 0)
     && (!s.assays.includes(6) || !!s.otherTechnique.trim());
 }).transform((s) => ({
   ...s,
