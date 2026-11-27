@@ -61,7 +61,8 @@ dd{margin:0;text-align:end;overflow-wrap:anywhere}
 .summary ol{border-top:1px solid #ddd;margin:7px 0 0;padding:6px 21px 0 0}
 .summary li+li{margin-top:4px}.summary li p{font-size:.83rem;color:#555}
 #message:empty{display:none}#message{color:#862a2a;margin:7px 0}
-.archive{margin-top:9px}.archive>summary{cursor:pointer;font-weight:bold}
+.archive{margin-top:9px}#staffIntakeLink:not([hidden]){display:inline-block;margin-top:8px;padding:5px 8px;color:#414141;font-size:.83rem}
+.archive>summary{cursor:pointer;font-weight:bold}
 .archiveTools{margin:9px 0 6px}.archiveTools input{flex:1 1 220px;width:auto}
 .record{border-top:1px solid #e8e8e8;padding:7px 0;overflow-wrap:anywhere}
 .record .row{justify-content:flex-end;flex:0 1 auto}
@@ -80,7 +81,7 @@ dd{margin:0;text-align:end;overflow-wrap:anywhere}
 <body>
 <main>
 <section class="shell" aria-labelledby="title">
-<header><div><div class="logo" lang="en">SYNAPSE</div><h1 id="title">فرم اطلاعات نمونه‌های پژوهشی</h1><p class="sub" lang="en">Sample Information Form</p></div><span class="badge" id="previewBadge">پیش‌نمایش</span><a href="/sample-intake" id="returnLink" hidden>بازگشت به پذیرش نمونه</a></header>
+<header><div><div class="logo" lang="en">SYNAPSE</div><h1 id="title">فرم اطلاعات نمونه‌های پژوهشی</h1><p class="sub" lang="en">Sample Information Form</p></div><span class="badge" id="previewBadge">پیش‌نمایش</span></header>
 <ol class="steps" id="steps" aria-label="مراحل فرم"></ol>
 <p id="message" role="alert"></p>
 <form id="wizard" novalidate></form>
@@ -91,6 +92,7 @@ dd{margin:0;text-align:end;overflow-wrap:anywhere}
 <p id="archiveStatus" class="hint" role="status"></p>
 <div id="records"></div>
 </details>
+<a href="/sample-intake?mode=staff" id="staffIntakeLink" hidden>پذیرش نمونه و سوابق کارکنان</a>
 </main>
 <script>
 'use strict';
@@ -476,7 +478,7 @@ async function loadArchive(){
 }
 if(live){
  document.querySelector('#previewBadge').hidden=true;
- document.querySelector('#returnLink').hidden=false;
+ document.querySelector('#staffIntakeLink').hidden=false;
  document.querySelector('#archiveTitle').textContent='پرونده‌های ذخیره‌شده';
  document.querySelector('#archiveHelp').textContent='مقصد به‌صورت یادداشت روی پرونده ذخیره می‌شود.';
  loadArchive();
