@@ -1,3 +1,4 @@
+import {ACCOUNTANT_USERNAME} from './accountant-owner-policy';
 import {db} from './staff-server';
 import {orgRoleCatalog,orgProfilePermissions} from './org-role-catalog';
 import {organizationalCode} from './organizational-logins';
@@ -8,6 +9,7 @@ export async function passwordMinimum(){const r=await db().prepare("SELECT value
 export function organizationalRuntimeProfile(user:any){
  const username=user.organizationalUsername||user.username,code=organizationalCode(username||'');
  if(user.email==='ekramiihamid@gmail.com'&&(!user.local||username==='owner'))return {...user,manager:true,orgRoles:['management']};
+ if(username===ACCOUNTANT_USERNAME)return {...user,manager:false,orgRoles:[],permissions:[]};
  if(code&&code!=='management'){const definition=orgRoleCatalog.find(r=>r.role_key===code)!;return {...user,manager:false,orgRoles:[code],permissions:orgProfilePermissions([definition],!!user.scientificQualified).filter(p=>process.env.SYNAPSE_STANDALONE_BUILD!=='1'||(user.permissions||[]).includes(p)),orgMode:'managed'};}
  // Historical logins keep their records and ordinary access, never implicit institute administration.
  return {...user,manager:false,permissions:(user.permissions||[]).filter((p:string)=>p!=='institute_admin')};

@@ -1,3 +1,4 @@
+import {isAccountant} from './accountant-owner-policy';
 import {db} from './staff-server';
 import {canFinance,canApproveFinance,str,integer} from './finance-policy';
 import {OWNER} from './staff-policy';
@@ -8,7 +9,10 @@ export function bankMust(v:any,message:string,status=400):asserts v{if(!v)throw 
 export const bankOwner=(u:any)=>!!u&&!u.laboratory&&u.email===OWNER&&u.manager===true;
 export const bankJSON=(s:any)=>{try{return JSON.parse(s||'{}')}catch{return {}}};
 export async function bankRegistry(){const r=await db().prepare("SELECT value FROM finance_settings WHERE id='bank-registry'").first<any>();return r?bankJSON(r.value):{revision:0,companies:[],accounts:[]};}
-export function bankAccount(u:any,label:string,scope='view',registry:any,legacy=false){if(!canFinance(u))return false;if(bankOwner(u))return true;const a=registry.accounts.find((a:any)=>a.ledger_account===label);if(!a)return legacy&&!registry.revision;return a.active&&a.grants.some((g:any)=>g.member===u.email&&g.scopes.includes('view')&&g.scopes.includes(scope))&&(!['match','decide'].includes(scope)||canApproveFinance(u));}
+export function bankAccount(u:any,label:string,scope='view',registry:any,legacy=false){if(isAccountant(u)){
+ const account=registry.accounts.find((entry:any)=>entry.ledger_account===label);
+ return scope==='view'&&!!account?.active&&account.grants.some((grant:any)=>grant.member===u.email&&grant.scopes.includes('view'));
+}if(!canFinance(u))return false;if(bankOwner(u))return true;const a=registry.accounts.find((a:any)=>a.ledger_account===label);if(!a)return legacy&&!registry.revision;return a.active&&a.grants.some((g:any)=>g.member===u.email&&g.scopes.includes('view')&&g.scopes.includes(scope))&&(!['match','decide'].includes(scope)||canApproveFinance(u));}
 export async function requireBankAccount(u:any,label:string,scope:string,legacy=false){const r=await bankRegistry();bankMust(bankAccount(u,label,scope,r,legacy),'این حساب یا اقدام بانکی مجاز نیست.',403);return r.accounts.find((a:any)=>a.ledger_account===label)||null;}
 export async function bankSchemaReady(){return (await db().prepare('PRAGMA table_info(finance_bank_rows)').all()).results.some((r:any)=>r.name==='bank_meta');}
 export async function writeBankRegistry(u:any,b:any){

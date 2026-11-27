@@ -1,5 +1,5 @@
-import {hasAccess} from './auth-policy.ts';
-const financePermission=(u:any,p:string)=>!!u&&!u.laboratory&&((u.email==='ekramiihamid@gmail.com'&&u.manager)||(u.dataPermissions??u.permissions??[]).includes(p));
+import {ACCOUNTANT_USERNAME} from './accountant-owner-policy.ts';
+const financePermission=(u:any,p:string)=>!!u&&!u.laboratory&&u.username!==ACCOUNTANT_USERNAME&&((u.email==='ekramiihamid@gmail.com'&&u.manager)||(u.dataPermissions??u.permissions??[]).includes(p));
 export const canFinance=(u:any)=>financePermission(u,'finance_ops');
 export const canApproveFinance=(u:any)=>canFinance(u)&&financePermission(u,'finance_approve');
 export const documentKinds:Record<string,string>={quote:'پیش‌فاکتور و برآورد',invoice:'فاکتور داخلی',contract:'قرارداد'};
