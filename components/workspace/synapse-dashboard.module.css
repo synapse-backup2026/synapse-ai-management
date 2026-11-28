@@ -67,3 +67,13 @@
 
 :global(.unified-sidebar) .sidebar > a { color:inherit; }
 .clock small svg { vertical-align:middle; }
+
+.sidebar { gap:.35rem; padding-block-start:.65rem; }
+.clock { padding:.55rem .7rem; gap:.14rem; }
+.clock time { font-size:1.65rem; letter-spacing:.055em; }
+.sidebar > a { padding:.42rem .62rem; }
+.clock .weather { display:flex; align-items:center; gap:.4rem; margin-block-start:.22rem; color:#d1e8ff; }
+.weather bdi { margin-inline-start:auto; font-weight:700; }
+.clock .weather[data-tone="sunny"] { color:#ffd479; }
+.clock .weather[data-tone="cloudy"] { color:#c2d9f3; }
+.clock .weather[data-tone="rainy"] { color:#81e1e3; }
