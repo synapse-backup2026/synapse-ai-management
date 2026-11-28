@@ -1,4 +1,5 @@
 'use client';
+import {canDeleteData} from '../../lib/deletion-policy';
 import {responsibilityForAccount} from '../../lib/organizational-logins';
 import {useMemo,useState} from 'react';
 import Link from 'next/link';
@@ -10,7 +11,7 @@ import InternalTickets from '../communication/internal-tickets';
 import MyResponsibilities from './my-responsibilities';
 import './work-command-dashboard.css';
 
-type Props={data:any;today:string;open:(r:any)=>void;create:(kind:string,date?:string)=>void;manager:boolean;initialView?:string;initialFilter?:string};
+type Props={data:any;today:string;open:(r:any)=>void;create:(kind:string,date?:string)=>void;manager:boolean;initialView?:string;initialFilter?:string;busy:boolean;onArchive:(r:any)=>void};
 type Metric='all'|'new'|'today'|'waiting'|'overdue'|'unassigned';
 type Section='tasks'|'plans'|'approvals'|'mail';
 const fa=(n:number)=>Number(n||0).toLocaleString('fa-IR');
@@ -52,7 +53,7 @@ function MonthCalendar({anchor,today,records,onChange,onOpen,onCreate,canCreate}
  </aside>;
 }
 
-export default function WorkCommandDashboard({data,today,open,create,manager,initialView,initialFilter}:Props){
+export default function WorkCommandDashboard({data,today,open,create,manager,initialView,initialFilter,busy,onArchive}:Props){
  const [section,setSection]=useState<Section>(initialView==='plans'||initialView==='approvals'||initialView==='mail'?initialView:'tasks');
  const [metric,setMetric]=useState<Metric>(initialView==='overview'||initialFilter==='today'?'today':initialFilter==='overdue'?'overdue':initialFilter==='waiting'?'waiting':'all');
  const [date,setDate]=useState(today);
@@ -124,7 +125,16 @@ export default function WorkCommandDashboard({data,today,open,create,manager,ini
      <button className="wrd-column-action" onClick={()=>{setBoardStatus(id);setMetric('all');setShowTaskList(true)}}>{id==='todo'||id==='doing'?'مشاهده همه':'مشاهده موارد'} <ArrowUpLeft size={13}/></button>
     </section>)}</div>
     {!showTaskList&&<button className="wrd-expand-tasks" onClick={()=>setShowTaskList(true)}>مشاهده فهرست آخرین وظایف <ChevronLeft size={15}/></button>}
-    {showTaskList&&<div className="wrd-task-list"><div className="wrd-task-list-heading"><strong>{boardStatus?'وظایف: '+(columns.find(c=>c.id===boardStatus)?.label||''):'آخرین وظایف من'}</strong><span>{fa((boardStatus?statusRows(boardStatus):ranked).length)} مورد</span></div>{(boardStatus?statusRows(boardStatus):ranked).slice(0,limit).map(r=><button type="button" key={r.id} onClick={()=>open(r)}><span>{r.title}<small>{memberLabel(r.assignee)} · {r.ref||r.id}</small></span><span className={'wrd-task-state wrd-state-'+r.status}>{statuses[r.status]||r.status}</span></button>)}{!ranked.length&&<p className="wrd-empty">برای این فیلتر وظیفه‌ای ثبت نشده است.</p>}{(boardStatus?statusRows(boardStatus):ranked).length>limit&&<button type="button" onClick={()=>setLimit(limit+25)}>نمایش وظایف بیشتر</button>}<button className="wrd-collapse-tasks" onClick={()=>setShowTaskList(false)}>بستن فهرست</button></div>}
+    {showTaskList&&<div className="wrd-task-list wrd-organized-list">
+     <div className="wrd-task-list-heading"><strong>{boardStatus?columns.find(c=>c.id===boardStatus)?.label:'فهرست وظایف'}</strong><span>{fa((boardStatus?statusRows(boardStatus):ranked).length)} مورد</span></div>
+     {(boardStatus?statusRows(boardStatus):ranked).slice(0,limit).map(r=><div className="wrd-organized-row" key={r.id}>
+      <button type="button" className="wrd-open-task" onClick={()=>open(r)}><span><strong>{r.title}</strong><small>{memberLabel(r.assignee)} · {executionDay(r)?jalaliLong(executionDay(r)):'بدون موعد'}</small></span><span className={'wrd-task-state wrd-state-'+r.status}>{statuses[r.status]||r.status}</span></button>
+      {canDeleteData(data.user)&&<button type="button" disabled={busy} className="wrd-delete-task" aria-label={'حذف '+r.title} onClick={()=>onArchive(r)}>حذف</button>}
+     </div>)}
+     {!(boardStatus?statusRows(boardStatus):ranked).length&&<p className="wrd-empty">برای این فیلتر وظیفه‌ای ثبت نشده است.</p>}
+     {(boardStatus?statusRows(boardStatus):ranked).length>limit&&<button type="button" onClick={()=>setLimit(limit+25)}>نمایش وظایف بیشتر</button>}
+     <button className="wrd-collapse-tasks" onClick={()=>setShowTaskList(false)}>بستن فهرست</button>
+    </div>}
    </section><WorkCorrespondenceStrip records={authorized} members={data.members} user={data.user} onOpen={open} onMailCount={setMailCount}/></div>
   </div>}
   {section==='plans'&&<div className="wrd-work-grid wrd-plan-view"><MonthCalendar anchor={date} today={today} records={mine} onChange={setDate} onOpen={open} onCreate={d=>create('plan',d)} canCreate={manager}/><section className="wrd-board"><header className="wrd-board-top"><h2><CalendarDays size={23}/> برنامه‌ریزی روزانه و آینده</h2></header><div className="wrd-plan-date">برنامه‌های {jalaliLong(date)}</div>{mine.filter(r=>executionDay(r)===date).map(r=><button className="wrd-plan-item" key={r.id} onClick={()=>open(r)}>{r.title}<small>{statuses[r.status]||r.status}</small></button>)}{!mine.some(r=>executionDay(r)===date)&&<p className="wrd-empty">برنامه‌ای برای تاریخ انتخاب‌شده وجود ندارد.</p>}</section></div>}

@@ -3,7 +3,7 @@ export const WORK_KINDS=['task','plan','decision','scientific'];
 export const workStatuses:Record<string,string>={todo:'برای انجام',doing:'در حال انجام',blocked:'متوقف / منتظر دیگران',review:'منتظر تأیید',changes:'نیازمند اصلاح',done:'تکمیل‌شده'};
 export function workDayKey(now:any=new Date()){if(now===null||now==='')return '';const value=new Date(now);if(!Number.isFinite(value.getTime()))return '';const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Dubai',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(value);return ['year','month','day'].map(type=>parts.find(p=>p.type===type)?.value||'').join('-')}
 const completedDay=(r:any)=>[r.completedAt,r.updatedAt,r.updated_at].filter(Boolean).map(workDayKey).find(Boolean)||'';
-export const isWork=(r:any)=>WORK_KINDS.includes(r.kind);
+export const isWork=(r:any)=>r.status!=='archived'&&WORK_KINDS.includes(r.kind);
 export const participant=(r:any,u:any)=>r.assignee===u.email||(r.collaborators||[]).includes(u.email);
 export const executionDay=(r:any)=>r.scheduledDate||r.due||'';
 export const isToday=(r:any,today:string)=>executionDay(r)===today;

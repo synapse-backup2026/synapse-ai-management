@@ -127,3 +127,10 @@
 .wrd-expand-tasks,.wrd-collapse-tasks{display:flex;justify-content:center;align-items:center;gap:6px;width:100%;min-height:29px;padding:5px;border:1px solid #d4e2f4;background:#f6faff;color:#286ba5;border-radius:9px;font-size:10px;font-weight:700}
 .wrd-expand-tasks:hover,.wrd-collapse-tasks:hover{background:#e8f4ff}
 @media(max-width:740px){.wrd-right-column{min-width:0}.wrd-right-column .wrd-board{min-height:0}}
+
+.wrd-organized-list .wrd-task-list-heading { border-inline-start: 4px solid #2379c4; padding-inline-start: .75rem; }
+.wrd-organized-row { display: flex; align-items: center; gap: .5rem; border: 1px solid #cbdff3; border-radius: 10px; margin-block: .5rem; padding: .35rem; background: #f2f8ff; }
+.wrd-organized-row .wrd-open-task { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: .75rem; text-align: start; border: 0; background: transparent; color: #153c66; padding: .55rem; }
+.wrd-open-task strong, .wrd-open-task small { display: block; overflow-wrap: anywhere; }
+.wrd-open-task small { margin-top: .2rem; color: #435d78; }
+.wrd-organized-row .wrd-delete-task { border: 1px solid #e8a5a7; border-radius: 8px; background: #fff2f2; color: #9c2433; padding: .4rem .6rem; }

@@ -1,3 +1,4 @@
+import {canDeleteData} from './deletion-policy';
 import {planOperationWorkUpdate} from './operation-work-link';
 import {IntegrationError} from './integration-store';
 import {dispatchTaskChanged} from './dispatch-engine';
@@ -8,7 +9,18 @@ import {OWNER,canReview,validateRecord} from './staff-policy';
 import {mayAssignWork} from './work-assignment-policy';
 import {isWork,participant,validSchedule,workTransition} from './work-policy';
 import {WorkError,workRecord,canExecute,notification} from './work-server';
-export async function handleWorkRequest(req:Request,user:any){try{if(!mutationAllowed(req))throw new WorkError('درخواست نامعتبر.',403);const u=user;if(!u||u.laboratory)throw new WorkError('دسترسی ندارید.',403);if((await req.clone().text()).length>100000)throw new WorkError('درخواست بزرگ است.',413);const b=await req.json() as any;const create=b.action==='create';const r=create?null:await workRecord(String(b.id||''),u);if(r&&!isWork(r))throw new WorkError('این رکورد وظیفه اجرایی نیست.');
+export async function handleWorkRequest(req:Request,user:any){try{if(!mutationAllowed(req))throw new WorkError('درخواست نامعتبر.',403);const u=user;if(!u||u.laboratory)throw new WorkError('دسترسی ندارید.',403);if((await req.clone().text()).length>100000)throw new WorkError('درخواست بزرگ است.',413);const b=await req.json() as any;if(b.action==='delete'&&!canDeleteData(u))throw new WorkError('حذف فقط برای مالک اصلی سامانه مجاز است.',403);const create=b.action==='create';const r=create?null:await workRecord(String(b.id||''),u);if(r&&!isWork(r))throw new WorkError('این رکورد وظیفه اجرایی نیست.');
+ if(b.action==='delete'){
+  if(!r||b.confirmed!==true||!Number.isSafeInteger(b.revision)||typeof b.reason!=='string'||!b.reason.trim()||b.reason.length>1000)throw new WorkError('نسخه، دلیل و تأیید حذف لازم است.');
+  const at=new Date().toISOString();
+  const [result]=await db().batch([
+   db().prepare("UPDATE staff_records SET status='archived',revision=revision+1,updated_at=? WHERE id=? AND revision=? AND status!='archived'").bind(at,r.id,b.revision),
+   db().prepare("INSERT INTO staff_events(id,record_id,actor,action,body,created_at) SELECT ?,?,?,'work-archived',?,? WHERE changes()=1").bind(crypto.randomUUID(),r.id,u.email,JSON.stringify({reason:b.reason.trim(),previousStatus:r.status}),at),
+  ]);
+  if(result.meta.changes!==1)throw new WorkError('وظیفه هم‌زمان تغییر کرده است. فهرست را تازه کنید.',409);
+  return json({ok:true});
+ }
+
  const members=(await db().prepare('SELECT m.email,m.role FROM staff_members m JOIN staff_accounts a ON a.member_id=m.email WHERE m.active=1 AND a.username IN (SELECT value FROM json_each(?))').bind(JSON.stringify(organizationalUsernames)).all()).results as any[];const active=(id:string)=>id===OWNER||members.some(m=>m.email===id);const ts=new Date().toISOString(),eventId=crypto.randomUUID(),id=r?.id||crypto.randomUUID();let details:any=r?JSON.parse(r.details||'{}'):{collaborators:[],progress:0,subtasks:[],approvalRequired:true};let title=r?.title,status=r?.status,result=r?.result||'',body='',action=b.action;
  if(r?.status==='done'&&!details.completedAt)details.completedAt=r.updatedAt;
  const target=new Set<string>();
