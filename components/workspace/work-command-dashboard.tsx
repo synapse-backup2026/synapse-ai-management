@@ -6,10 +6,11 @@ import {CalendarDays,ClipboardCheck,ShieldCheck,Mail,Layers3,Inbox,Clock3,Hourgl
 import {isWork,participant,isOverdue,executionDay,calendarDays} from '../../lib/work-policy';
 import {canReview} from '../../lib/staff-policy';
 import WorkCorrespondenceStrip from './work-correspondence-strip';
+import InternalTickets from '../communication/internal-tickets';
 import MyResponsibilities from './my-responsibilities';
 import './work-command-dashboard.css';
 
-type Props={data:any;today:string;open:(r:any)=>void;create:(kind:string,date?:string)=>void;manager:boolean};
+type Props={data:any;today:string;open:(r:any)=>void;create:(kind:string,date?:string)=>void;manager:boolean;initialView?:string;initialFilter?:string};
 type Metric='all'|'new'|'today'|'waiting'|'overdue'|'unassigned';
 type Section='tasks'|'plans'|'approvals'|'mail';
 const fa=(n:number)=>Number(n||0).toLocaleString('fa-IR');
@@ -51,14 +52,17 @@ function MonthCalendar({anchor,today,records,onChange,onOpen,onCreate,canCreate}
  </aside>;
 }
 
-export default function WorkCommandDashboard({data,today,open,create,manager}:Props){
- const [section,setSection]=useState<Section>('tasks');
- const [metric,setMetric]=useState<Metric>('all');
+export default function WorkCommandDashboard({data,today,open,create,manager,initialView,initialFilter}:Props){
+ const [section,setSection]=useState<Section>(initialView==='plans'||initialView==='approvals'||initialView==='mail'?initialView:'tasks');
+ const [metric,setMetric]=useState<Metric>(initialView==='overview'||initialFilter==='today'?'today':initialFilter==='overdue'?'overdue':initialFilter==='waiting'?'waiting':'all');
  const [date,setDate]=useState(today);
  const [query,setQuery]=useState('');
  const [scope,setScope]=useState('mine');
  const [boardStatus,setBoardStatus]=useState<string>('');
- const [showTaskList,setShowTaskList]=useState(false);
+ const [showTaskList,setShowTaskList]=useState(initialView==='all'||initialView==='overview');
+ const [limit,setLimit]=useState(25);
+ const [mailCount,setMailCount]=useState<number|null>(null);
+ const [approvalView,setApprovalView]=useState<'pending'|'sent'|'history'>('pending');
  const [unit,setUnit]=useState('');
  const [project,setProject]=useState('');
  const authorized=useMemo(()=>((data.records||[]) as any[]).filter(isWork),[data.records]);
@@ -77,10 +81,13 @@ export default function WorkCommandDashboard({data,today,open,create,manager}:Pr
   const passes=metric==='all'||metric==='new'&&r.status==='todo'||metric==='today'&&executionDay(r)===today||metric==='waiting'&&['blocked','review','changes'].includes(r.status)||metric==='overdue'&&isOverdue(r,today)||metric==='unassigned'&&!r.assignee;
   return passes&&(!unit||r.unit===unit)&&(!project||r.project===project)&&(!query||[r.title,r.body,r.ref,r.id].join(' ').toLowerCase().includes(query.trim().toLowerCase()));
  });
- const ranked=[...selected].sort((a,b)=>String(b.updated_at||b.updatedAt||b.created_at||'').localeCompare(String(a.updated_at||a.updatedAt||a.created_at||''))).slice(0,50);
+ const ranked=[...selected].sort((a,b)=>String(b.updated_at||b.updatedAt||b.created_at||'').localeCompare(String(a.updated_at||a.updatedAt||a.created_at||'')));
  const availableUnits=[...new Set(authorized.map(r=>String(r.unit||'').trim()).filter(Boolean))].sort();
  const availableProjects=[...new Set(authorized.map(r=>String(r.project||'').trim()).filter(Boolean))].sort();
  const statusRows=(id:string)=>ranked.filter(r=>id==='blocked'?['blocked','review','changes'].includes(r.status):r.status===id);
+ const submitted=authorized.filter(r=>r.status==='review'&&(r.submittedBy||r.assignee)===data.user.email);
+ const historyIds=new Set((data.events||[]).filter((e:any)=>['approve','return','information'].includes(e.action)).map((e:any)=>e.record_id));
+ const approvals=approvalView==='pending'?reviewable:approvalView==='sent'?submitted:authorized.filter(r=>historyIds.has(r.id));
  const memberLabel=(email:string)=>{
   return responsibilityForAccount(email,data.members);
  };
@@ -100,8 +107,8 @@ export default function WorkCommandDashboard({data,today,open,create,manager}:Pr
  ] as const;
  return <div className="work-command work-reference-dashboard" dir="rtl">
   <header className="wrd-title"><div className="wrd-title-icon"><CalendarDays size={38}/></div><div><h1>کارتابل و برنامه‌ریزی</h1><p>مدیریت وظایف، برنامه‌ها، تیکت‌ها و مکاتبات سازمانی</p></div></header>
-  <nav className="wrd-module-row" aria-label="بخش‌های کارتابل و برنامه‌ریزی">{modules.map(({id,label,sub,Icon})=><button type="button" key={id} onClick={()=>setSection(id)} aria-pressed={section===id} className={'wrd-module wrd-module-'+id+(section===id?' active':'')}><span className="wrd-module-arrow"><ChevronLeft size={23}/></span><Icon className="wrd-module-icon" size={49} strokeWidth={1.8}/><span className="wrd-module-copy"><strong>{label}</strong><small>{sub}</small></span></button>)}</nav>
-  <section className="wrd-metrics" aria-label="آمار قابل کلیک کارتابل">{metrics.map(({id,label,Icon})=><button type="button" key={id} className={'wrd-metric wrd-metric-'+id+(metric===id&&section==='tasks'?' selected':'')} onClick={()=>{setSection('tasks');setMetric(id as Metric);setBoardStatus('');setShowTaskList(true)}} aria-pressed={section==='tasks'&&metric===id}><Icon size={31} strokeWidth={1.7}/><span>{label}</span><strong>{fa(counts[id as Metric])}</strong></button>)}</section>
+  <nav className="wrd-module-row" aria-label="بخش‌های کارتابل و برنامه‌ریزی">{modules.map(({id,label,sub,Icon})=><button type="button" key={id} onClick={()=>{setSection(id);setLimit(25)}} aria-pressed={section===id} className={'wrd-module wrd-module-'+id+(section===id?' active':'')}><span className="wrd-module-arrow"><ChevronLeft size={23}/></span><Icon className="wrd-module-icon" size={49} strokeWidth={1.8}/><span className="wrd-module-copy"><strong>{label}{id==='mail'&&mailCount!==null?' · '+fa(mailCount):id==='approvals'?' · '+fa(reviewable.length):''}</strong><small>{sub}</small></span></button>)}</nav>
+  <section className="wrd-metrics" aria-label="آمار قابل کلیک کارتابل">{metrics.map(({id,label,Icon})=><button type="button" key={id} className={'wrd-metric wrd-metric-'+id+(metric===id&&section==='tasks'?' selected':'')} onClick={()=>{setSection('tasks');setMetric(id as Metric);setBoardStatus('');setShowTaskList(true);setLimit(25)}} aria-pressed={section==='tasks'&&metric===id}><Icon size={31} strokeWidth={1.7}/><span>{label}</span><strong>{fa(counts[id as Metric])}</strong></button>)}</section>
   {section==='tasks'&&<div className="wrd-work-grid">
    <MonthCalendar anchor={date} today={today} records={mine} onChange={setDate} onOpen={open} onCreate={d=>create('plan',d)} canCreate={manager}/>
    <div className="wrd-right-column"><section className="wrd-board" aria-label="برد وظایف من">
@@ -117,13 +124,21 @@ export default function WorkCommandDashboard({data,today,open,create,manager}:Pr
      <button className="wrd-column-action" onClick={()=>{setBoardStatus(id);setMetric('all');setShowTaskList(true)}}>{id==='todo'||id==='doing'?'مشاهده همه':'مشاهده موارد'} <ArrowUpLeft size={13}/></button>
     </section>)}</div>
     {!showTaskList&&<button className="wrd-expand-tasks" onClick={()=>setShowTaskList(true)}>مشاهده فهرست آخرین وظایف <ChevronLeft size={15}/></button>}
-    {showTaskList&&<div className="wrd-task-list"><div className="wrd-task-list-heading"><strong>{boardStatus?'وظایف: '+(columns.find(c=>c.id===boardStatus)?.label||''):'آخرین وظایف من'}</strong><span>{fa((boardStatus?statusRows(boardStatus):ranked).length)} مورد از حداکثر ۵۰ وظیفه اخیر</span></div>{(boardStatus?statusRows(boardStatus):ranked).slice(0,8).map(r=><button type="button" key={r.id} onClick={()=>open(r)}><span>{r.title}<small>{memberLabel(r.assignee)} · {r.ref||r.id}</small></span><span className={'wrd-task-state wrd-state-'+r.status}>{statuses[r.status]||r.status}</span></button>)}{!ranked.length&&<p className="wrd-empty">برای این فیلتر وظیفه‌ای ثبت نشده است.</p>}<button className="wrd-collapse-tasks" onClick={()=>setShowTaskList(false)}>بستن فهرست</button></div>}
-   </section><WorkCorrespondenceStrip records={authorized} members={data.members} user={data.user} onOpen={open}/></div>
+    {showTaskList&&<div className="wrd-task-list"><div className="wrd-task-list-heading"><strong>{boardStatus?'وظایف: '+(columns.find(c=>c.id===boardStatus)?.label||''):'آخرین وظایف من'}</strong><span>{fa((boardStatus?statusRows(boardStatus):ranked).length)} مورد</span></div>{(boardStatus?statusRows(boardStatus):ranked).slice(0,limit).map(r=><button type="button" key={r.id} onClick={()=>open(r)}><span>{r.title}<small>{memberLabel(r.assignee)} · {r.ref||r.id}</small></span><span className={'wrd-task-state wrd-state-'+r.status}>{statuses[r.status]||r.status}</span></button>)}{!ranked.length&&<p className="wrd-empty">برای این فیلتر وظیفه‌ای ثبت نشده است.</p>}{(boardStatus?statusRows(boardStatus):ranked).length>limit&&<button type="button" onClick={()=>setLimit(limit+25)}>نمایش وظایف بیشتر</button>}<button className="wrd-collapse-tasks" onClick={()=>setShowTaskList(false)}>بستن فهرست</button></div>}
+   </section><WorkCorrespondenceStrip records={authorized} members={data.members} user={data.user} onOpen={open} onMailCount={setMailCount}/></div>
   </div>}
-  {section==='plans'&&<div className="wrd-work-grid wrd-plan-view"><MonthCalendar anchor={date} today={today} records={mine} onChange={setDate} onOpen={open} onCreate={d=>create('plan',d)} canCreate={manager}/><section className="wrd-board"><header className="wrd-board-top"><h2><CalendarDays size={23}/> برنامه‌ریزی روزانه و آینده</h2><Link href="/staff?view=plans">برنامه‌ریزی کامل <ArrowUpLeft size={15}/></Link></header><div className="wrd-plan-date">برنامه‌های {jalaliLong(date)}</div>{mine.filter(r=>executionDay(r)===date).map(r=><button className="wrd-plan-item" key={r.id} onClick={()=>open(r)}>{r.title}<small>{statuses[r.status]||r.status}</small></button>)}{!mine.some(r=>executionDay(r)===date)&&<p className="wrd-empty">برنامه‌ای برای تاریخ انتخاب‌شده وجود ندارد.</p>}</section></div>}
-  {section==='approvals'&&<section className="wrd-secondary"><header><h2><ShieldCheck/> بررسی و تأیید</h2><Link href="/staff?view=approvals">صفحه کامل تأییدیه‌ها <ArrowUpLeft size={16}/></Link></header><div className="wrd-review-count">در انتظار بررسی شما: <strong>{fa(reviewable.length)}</strong></div>{reviewable.slice(0,50).map(r=><button className="wrd-plan-item" key={r.id} onClick={()=>open(r)}>{r.title}<small>منتظر تصمیم</small></button>)}{!reviewable.length&&<p className="wrd-empty">درخواست منتظر تأییدی برای حساب شما وجود ندارد.</p>}</section>}
-  {section==='mail'&&<section className="wrd-secondary"><header><h2><Mail/> مکاتبات داخلی</h2><Link href="/work/mail">دفتر کامل مکاتبات <ArrowUpLeft size={16}/></Link></header><p>مکاتبات و پیوست‌ها از سامانه اصلی با رعایت دسترسی‌ها خوانده می‌شوند.</p><Link className="wrd-mail-link" href="/work/mail">مشاهده دریافتی‌ها، ارسالی‌ها و سابقه گفتگوها</Link></section>}
-  {section!=='tasks'&&<WorkCorrespondenceStrip records={authorized} members={data.members} user={data.user} onOpen={open}/>}
+  {section==='plans'&&<div className="wrd-work-grid wrd-plan-view"><MonthCalendar anchor={date} today={today} records={mine} onChange={setDate} onOpen={open} onCreate={d=>create('plan',d)} canCreate={manager}/><section className="wrd-board"><header className="wrd-board-top"><h2><CalendarDays size={23}/> برنامه‌ریزی روزانه و آینده</h2></header><div className="wrd-plan-date">برنامه‌های {jalaliLong(date)}</div>{mine.filter(r=>executionDay(r)===date).map(r=><button className="wrd-plan-item" key={r.id} onClick={()=>open(r)}>{r.title}<small>{statuses[r.status]||r.status}</small></button>)}{!mine.some(r=>executionDay(r)===date)&&<p className="wrd-empty">برنامه‌ای برای تاریخ انتخاب‌شده وجود ندارد.</p>}</section></div>}
+  {section==='approvals'&&<section className="wrd-secondary">
+   <header><h2><ShieldCheck/> بررسی و تأیید</h2></header>
+   <div className="work-tabs">{([['pending','منتظر تأیید'],['sent','ارسال‌شده توسط من'],['history','تاریخچه تصمیم‌ها']] as const).map(([id,label])=><button key={id} type="button" aria-pressed={approvalView===id} onClick={()=>{setApprovalView(id);setLimit(25)}}>{label}</button>)}</div>
+   <p>تعداد موارد: {fa(approvals.length)}</p>
+   {approvals.slice(0,limit).map(r=><button className="wrd-plan-item" key={r.id} onClick={()=>open(r)}>{r.title}<small>{statuses[r.status]||r.status}</small></button>)}
+   {approvals.length>limit&&<button type="button" onClick={()=>setLimit(limit+25)}>نمایش موارد بیشتر</button>}
+   {!approvals.length&&<p className="wrd-empty">در این بخش موردی برای حساب شما ثبت نشده است.</p>}
+  </section>}
+  {section==='mail'&&<section className="wrd-secondary"><header><h2><Mail/> مکاتبات داخلی</h2><Link href="/work/mail">سوابق مکاتبات ثبت‌شده</Link></header><InternalTickets onInboxCount={setMailCount}/></section>}
+  {section!=='tasks'&&section!=='mail'&&<WorkCorrespondenceStrip records={authorized} members={data.members} user={data.user} onOpen={open} onMailCount={setMailCount}/>}
+  {section==='tasks'&&data.sampleReferralCount>0&&<section className="wrd-secondary"><header><h2>برگه‌های ارجاعی نمونه</h2><Link href="/sample-intake?mode=referrals">{fa(data.sampleReferralCount)} برگه ارجاع‌شده</Link></header></section>}
   <details className="wrd-responsibilities"><summary><FileText size={16}/> نقش و مسئولیت‌های سازمانی من</summary><MyResponsibilities user={data.user} organization={data.organization}/></details>
   <footer className="wrd-footnote">آمار و محتوا از پرونده‌های واقعی قابل‌دسترسی خوانده می‌شوند. ثبت ایمیل یا تماس به‌تنهایی وظیفه جدید ایجاد نمی‌کند.</footer>
  </div>;

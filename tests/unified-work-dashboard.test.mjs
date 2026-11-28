@@ -9,19 +9,19 @@ const data=readFileSync('lib/staff-data.ts','utf8');
 const mail=readFileSync('components/workspace/work-correspondence-strip.tsx','utf8');
 const shell=readFileSync('components/workspace/workspace-shell.tsx','utf8');
 const repair=readFileSync('components/workspace/workspace-repair.css','utf8');
-test('sidebar offers four approved destinations and legacy work routes remain',()=>{
+test('the staff sidebar opens one dashboard and legacy views map to its sections',()=>{
  const group=nav.split("{id:'work',label:'کارتابل و برنامه‌ریزی',items:[")[1]?.split("]}")[0]||'';
- assert.ok((group.match(/item\(/g)||[]).length>=7,'Existing work routes must remain');
- for(const label of ['کارتابل و برنامه‌ریزی','همه وظایف','برد وظایف','برنامه‌ریزی','بررسی و تأیید','مکاتبات داخلی'])assert.ok(group.includes(label));
- assert.match(work,/overview:'امروز من'/);
- assert.match(work,/board:'برد وظایف'/);
- assert.match(work,/view==='dashboard'\?<WorkCommandDashboard/);
+ assert.equal((group.match(/item\(/g)||[]).length,1);
+ assert.match(group,/staff\?view=dashboard/);
+ assert.match(work,/initialView=\{requestedView\}/);
+ assert.match(ui,/initialView==='overview'\|\|initialFilter==='today'/);
+ assert.match(ui,/<InternalTickets onInboxCount=/);
 });
 test('all data is sourced from authorized real staff records, with no example counters',()=>{
  assert.match(ui,/data\.records\|\|\[\]/);
  assert.match(ui,/filter\(isWork\)/);
  assert.match(ui,/participant\(r,data\.user\)/);
- assert.match(ui,/\.slice\(0,50\)/);
+ assert.match(ui,/\.slice\(0,limit\)/);
  assert.match(data,/const authorized=records\.filter/);
  assert.doesNotMatch(ui,/Math\.random\(|1048|۱۰۴۸/);
 });

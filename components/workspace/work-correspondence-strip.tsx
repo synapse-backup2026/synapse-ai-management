@@ -10,10 +10,10 @@ type Row={key:string;id:string;title:string;source:string;department:string;owne
 const statuses:Record<string,string>={routed:'ارجاع‌شده',waiting_internal:'منتظر پاسخ',waiting_customer:'منتظر پاسخ مشتری',waiting_approval:'منتظر تأیید',closed:'بسته',awaiting_assignment:'بدون مسئول',todo:'جدید',doing:'در حال انجام',blocked:'منتظر دیگران',review:'منتظر تأیید',done:'تکمیل‌شده'};
 const fa=(n:number)=>n.toLocaleString('fa-IR');
 const prettyDate=(s:string)=>{try{return s?new Intl.DateTimeFormat('fa-IR-u-ca-persian',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:'Asia/Dubai'}).format(new Date(s)):'—'}catch{return s?.slice(0,10)||'—'}};
-export default function WorkCorrespondenceStrip({records=[],members=[],user,onOpen}:{records?:any[];members?:any[];user?:any;onOpen?:(r:any)=>void}){
+export default function WorkCorrespondenceStrip({records=[],members=[],user,onOpen,onMailCount}:{records?:any[];members?:any[];user?:any;onOpen?:(r:any)=>void;onMailCount?:(count:number)=>void}){
  const [response,setResponse]=useState<{tickets:Ticket[],user:{email:string}}|null>(null);
  const [error,setError]=useState(''),[tab,setTab]=useState('all');
- async function load(){try{const r=await fetch('/api/internal-tickets',{cache:'no-store'});const d:any=await r.json();if(!r.ok)throw Error(d.error||'خطای دریافت مکاتبات');setResponse(d);setError('')}catch(e:any){setError(e.message||'دریافت مکاتبات ممکن نشد.')}}
+ async function load(){try{const r=await fetch('/api/internal-tickets',{cache:'no-store'});const d:any=await r.json();if(!r.ok)throw Error(d.error||'خطای دریافت مکاتبات');setResponse(d);onMailCount?.((d.tickets||[]).filter((t:Ticket)=>t.assignee===d.user.email||t.routing?.ownerRole===d.user.role).length);setError('')}catch(e:any){setError(e.message||'دریافت مکاتبات ممکن نشد.')}}
  useEffect(()=>{void load()},[]);
  const email=user?.email||response?.user?.email||'';
  const rows=useMemo(()=>{
