@@ -134,3 +134,17 @@
 .center :global(.lab-case-archive-toggle small){color:#64748b}
 @media(max-width:980px){.center :global(.lab-case-filter-toolbar){grid-template-columns:1fr}}
 @media(max-width:600px){.center :global(.lab-case-status-pair),.center :global(.lab-case-advanced .lab-filter-grid),.center :global(.lab-case-date-pair){grid-template-columns:1fr}}
+
+.referrals { display:grid; gap:1rem; padding:clamp(.8rem,2vw,1.35rem); border:1px solid #c4daf4; border-radius:1.2rem; background:linear-gradient(145deg,#f4faff,#eaf2ff); color:#12355a; }
+.referralHeader { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.65rem; }
+.referralHeader h2,.referralHeader h3 { margin:0; }
+.referralStats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.7rem; }
+.referralStats > div { padding:.8rem; border-radius:.85rem; border:1px solid #b9d6f5; background:#e0efff; }
+.referralStats > div:nth-child(2) { background:#def6ed; border-color:#b2e4d1; color:#135746; }
+.referralStats > div:nth-child(3) { background:#fff0db; border-color:#f0d6af; color:#784b16; }
+.referralStats strong { display:block; font-size:1.45rem; }
+.referralCase { padding:.9rem; border:1px solid #c2d8f2; border-inline-start:4px solid #397ec6; border-radius:.85rem; background:#fff; }
+.referrals ul { display:grid; gap:.4rem; list-style:none; padding:0; margin:.55rem 0; }
+.referrals li { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.45rem; padding:.5rem .65rem; background:#f0f6ff; border-radius:.5rem; overflow-wrap:anywhere; }
+.referrals small { display:block; margin-top:.25rem; color:#45617e; }
+.referrals summary { cursor:pointer; padding:.4rem 0; color:#215e9d; }
