@@ -134,3 +134,24 @@
 .center :global(.lab-case-archive-toggle small){color:#64748b}
 @media(max-width:980px){.center :global(.lab-case-filter-toolbar){grid-template-columns:1fr}}
 @media(max-width:600px){.center :global(.lab-case-status-pair),.center :global(.lab-case-advanced .lab-filter-grid),.center :global(.lab-case-date-pair){grid-template-columns:1fr}}
+
+.invoiceImport {
+ display: grid;
+ gap: 10px;
+ margin-block: 0 16px;
+ padding: 14px;
+ border: 1px solid #cbe4e2;
+ border-radius: 12px;
+ background: #f2faf9;
+}
+.invoiceImport h3, .invoiceImport h4, .invoiceImport p { margin: 0; }
+.invoiceActions { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; }
+.invoiceActions label { flex: 1 1 12rem; }
+.invoiceActions button { min-height: 38px; }
+.invoiceUnmapped { display: grid; gap: 8px; }
+.invoiceUnmapped label { display: grid; grid-template-columns: 1fr minmax(10rem, 42%); align-items: center; gap: 8px; }
+.invoiceLines ul { margin-block-end: 0; }
+.invoiceLines summary { cursor: pointer; }
+@media (max-width: 600px) {
+ .invoiceUnmapped label { grid-template-columns: 1fr; }
+}

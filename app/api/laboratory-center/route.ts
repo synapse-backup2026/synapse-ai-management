@@ -1,6 +1,6 @@
 import { requestOrigin } from "../../../lib/request-origin";
 import {identity,json,mutationAllowed} from '../../../lib/staff-server';
-import {readLaboratoryCenter,writeLaboratoryCenter} from '../../../lib/laboratory-center';
+import {readCaseInvoice,readLaboratoryCenter,writeLaboratoryCenter} from '../../../lib/laboratory-center';
 export const dynamic='force-dynamic';
-export async function GET(req:Request){try{return json(await readLaboratoryCenter(await identity(),new URL(req.url).searchParams))}catch(e:any){const trace_id=crypto.randomUUID();if(!e.status)console.error('laboratory-center read failure',trace_id);return json({error:e.status?e.message:'خواندن مرکز آزمایشگاه ممکن نشد؛ شناسه پیگیری: '+trace_id,trace_id},e.status||500)}}
+export async function GET(req:Request){try{const user=await identity(),params=new URL(req.url).searchParams;return json(await (params.has('case_invoice')?readCaseInvoice(user,params):readLaboratoryCenter(user,params)))}catch(e:any){const trace_id=crypto.randomUUID();if(!e.status)console.error('laboratory-center read failure',trace_id);return json({error:e.status?e.message:'خواندن مرکز آزمایشگاه ممکن نشد؛ شناسه پیگیری: '+trace_id,trace_id},e.status||500)}}
 export async function POST(req:Request){if(!mutationAllowed(req))return json({error:'درخواست نامعتبر است.'},403);try{const raw=await req.text();if(raw.length>400000)return json({error:'حجم درخواست زیاد است.'},413);return json(await writeLaboratoryCenter(await identity(),JSON.parse(raw),requestOrigin(req)))}catch(e:any){const trace_id=crypto.randomUUID();if(!e.status)console.error('laboratory-center write failure',trace_id);return json({error:e.status?e.message:'ثبت انجام نشد؛ نسخه و اطلاعات را بررسی کنید. شناسه پیگیری: '+trace_id,trace_id},e.status||400)}}
