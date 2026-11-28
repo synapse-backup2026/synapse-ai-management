@@ -1,3 +1,5 @@
+import {canFinance} from './finance-policy';
+import {accountingDocumentMeta,accountingQuoteCompany} from './accounting-policy';
 import {caseAction,centerAssignments} from './laboratory-case-workflow';
 import {organizationalCode} from './organizational-logins';
 import {roleTitle} from './org-role-catalog';
@@ -93,6 +95,37 @@ function catalog(includeLegacy=false){const result:any[]=[];for(const bank of re
    requirements:r.validationRule,output:'پس از تصویب دامنه خدمت تعیین شود'});
  }
  return includeLegacy?[...safe,...historicalMolecular]:safe;}
+export async function readCaseInvoiceServices(u:any, number:string){
+ check(canMother(u)&&canFinance(u),'خواندن ردیف‌های فاکتور نیازمند دسترسی مالی و ثبت پرونده است.',403);
+ const normalized=number.trim().replace(/[۰-۹٠-٩]/g,c=>String(c.charCodeAt(0)-(c>='۰'?1776:1632)));
+ check(normalized.length>0&&normalized.length<=120,'شماره فاکتور معتبر وارد کنید.');
+ const documents=await rows("SELECT id,number,payload FROM finance_documents WHERE kind='invoice' AND status='issued' AND lower(number)=lower(?)",normalized);
+ const permitted=[];
+ for(const doc of documents){
+  const meta=await accountingDocumentMeta(doc.id);
+  if(await accountingQuoteCompany(u,meta.company_id||''))permitted.push(doc);
+ }
+ check(permitted.length===1,permitted.length?'شماره فاکتور در بیش از یک سند مجاز تکرار شده است.':'فاکتور صادرشده و مجاز پیدا نشد.',permitted.length?409:404);
+ const invoice=permitted[0], references=new Map(catalog().map(service=>[service.tariff_id,service]));
+ const groups=new Map<string,Map<string,any>>();
+ const unmatched:{row:number;description:string}[]=[];
+ const lines=JSON.parse(invoice.payload).lines||[];
+ for(const [index,line] of lines.entries()){
+  const service=references.get(line.tariff_id);
+  const quantity=line.quantity*(line.repeats??1);
+  const group=service?groups.get(service.domain):undefined;
+  const previous=group?.get(line.tariff_id);
+  if(!service||!Number.isSafeInteger(quantity)||quantity<=0||quantity+(previous?.quantity??0)>100000){
+   unmatched.push({row:index+1,description:String(line.description||'').slice(0,240)});
+   continue;
+  }
+  const services=group??new Map();
+  services.set(line.tariff_id,{tariff_id:line.tariff_id,description:service.title,unit:service.unit,quantity:quantity+(previous?.quantity??0),notes:''});
+  groups.set(service.domain,services);
+ }
+ return {number:invoice.number,lineCount:lines.length,unmatched,assignments:[...groups].map(([domain,services])=>({domain,laboratory_id:'',instructions:'',due:'',services:[...services.values()]}))};
+}
+
 export async function readLaboratoryCenter(u:any,p:URLSearchParams){check(u&&(canMother(u)||u.laboratory||hasAccess(u,'mail')||canCoordinate(u)),'دسترسی ندارید.',403);const base=canMother(u)||u.laboratory?await readMother(u,new URLSearchParams({all:'1'})):{projects:[],resources:{},user:{}};const allJobs=await rows('SELECT j.*,l.name laboratory_name,l.type laboratory_type,l.status laboratory_status FROM laboratory_jobs j JOIN laboratories l ON l.id=j.laboratory_id ORDER BY j.updated_at DESC');const jobs=allJobs.filter(j=>canReadLabJob(u,j)&&jobDomain(j));const projectIds=new Set(base.projects.map((r:any)=>r.id));const roots=projectIds.size?await rows('SELECT r.*,w.details FROM staff_records r JOIN staff_work_details w ON w.record_id=r.id WHERE r.id IN (SELECT value FROM json_each(?))',JSON.stringify([...projectIds])):[];
  const cases=roots.map(r=>{const m=parsed(r.details).mother,js=jobs.filter(j=>jobMetadata(j).mother_project===r.id);const state=r.status==='done'?'تکمیل‌شده':!js.length?'منتظر ارجاع':js.some(j=>j.status==='doing')?'در حال اجرا':m.waiting_reason||'منتظر نمونه';return {record_status:r.status,created_at:r.created_at,review_state:m.review?.state||'',review:m.review||{},has_assignments:!!m.center_assignments?.length,waiting_reason:m.waiting_reason||'',archived:m.archived||null,archived_entities:m.archived_entities||[],draft_form:u.laboratory?undefined:m.draft_form,research_project:u.laboratory?undefined:m.research_project||null,assignments:u.laboratory?undefined:m.center_assignments||[],id:r.id,code:'LC-'+r.id.slice(-10),title:r.title,invoice_number:m.invoice_number,customer:u.laboratory?{name:js[0]?.client||''}:m.customer,assignee:r.assignee,revision:r.revision,updated_at:r.updated_at,status:state,description:u.laboratory?'':m.description||'',domains:[...new Set(js.length?js.map(j=>jobDomain(j)?.id):(m.center_assignments||[]).map((a:any)=>a.domain))],can_approve:!!u.manager&&!!m.center_assignments?.length&&!m.dispatch_approval&&!m.center_assignments.some((a:any)=>inquiryOnlyLabService(a.services)),operation_ids:u.laboratory?[]:m.operation_ids||[],management_approved:!!m.dispatch_approval};});
  const evidence=jobs.filter(j=>canReadLabEvidence(u,j)).map(j=>j.id),records=evidence.length?await rows("SELECT * FROM laboratory_records WHERE job_id IN (SELECT value FROM json_each(?)) AND kind IN ('result','result_draft') ORDER BY created_at,version",JSON.stringify(evidence)):[];const files=evidence.length?await rows('SELECT id,job_id,file_name,mime,size,created_at FROM laboratory_files WHERE job_id IN (SELECT value FROM json_each(?))',JSON.stringify(evidence)):[];
