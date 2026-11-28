@@ -15,7 +15,6 @@ export default function PersonalHome({u,d,message}:{u:any,d:any,message:string[]
  ...(u.manager?[{label:'ثبت وظیفه',Icon:ClipboardCheck,tone:'green',href:'/staff?view=all&new=task',hint:'ثبت و ارجاع وظیفه'}]:[{label:'وظایف من',Icon:ClipboardCheck,tone:'green',href:'/staff?view=all',hint:'مشاهده کارهای ارجاع‌شده'}]),
  {label:'برنامه امروز',Icon:CalendarDays,tone:'blue',href:'/staff?view=plans',hint:'برنامه و تقویم من'},
  ...(hasAccess(u,'operations')?[{label:'درخواست مشتری',Icon:Layers,tone:'purple',href:'/operations?new=request',hint:'ثبت درخواست مشتری'}]:[]),
- ...(u.manager||hasAccess(u,'projects')?[{label:'ثبت پروژه',Icon:FileCheck2,tone:'blue',href:'/work/projects',hint:'ثبت و مدیریت پروژه‌های مجاز'}]:[]),
  ...(u.manager||hasAccess(u,'sample_intake')||hasAccess(u,'research_supervision')?[{label:'برگه نمونه',Icon:FlaskConical,tone:'green',href:'/sample-intake',hint:'ثبت مستقیم برگه نمونه و تیک آزمایشگاه پیشنهادی؛ بدون Google Sheets'}]:[]),
  ...(hasAccess(u,'lab_operations')||hasAccess(u,'sample_intake')?[{label:'پرونده آزمایشگاهی',Icon:FlaskConical,tone:'purple',href:'/laboratories?view=new',hint:'ثبت پرونده آزمایشگاهی'}]:[]),
  ...(hasAccess(u,'finance_ops')?[{label:'مالی و قراردادها',Icon:WalletCards,tone:'green',href:'/finance/dashboard',hint:'داشبورد مالی و قراردادها'}]:[]),
@@ -26,7 +25,7 @@ export default function PersonalHome({u,d,message}:{u:any,d:any,message:string[]
  return <main className={'home-v2 '+styles.dashboard} dir="rtl">
   <div className="home-v2-intro">
    <section className="home-v2-heading"><div><span className="home-v2-icon blue"><Home size={27}/></span><h1>خانه من</h1></div><p className="home-v2-date"><CalendarDays size={15}/>{date(d.todayKey)}</p><p className="home-v2-greeting">مرکز پیگیری درخواست‌ها، وظایف و پرونده‌های پژوهشکده</p></section>
-   <section className="home-v2-motivation home-v2-neural" aria-label="نمای خوشامدگویی SYNAPSE"><div className="home-v2-quote"><span className="home-v2-neural-mark" aria-hidden="true">S</span><div><h2>خوش آمدید، {u.name||'همکار پژوهشکده'}</h2><p>سامانه یکپارچه پیگیری فعالیت‌های پژوهشکده</p></div></div></section>
+   <section className="home-v2-motivation home-v2-neural" aria-label="نمای خوشامدگویی SYNAPSE"><div className="home-v2-quote"><img className={styles.brandIntro} src="/brand/synapse-horizontal.jpeg" alt="SYNAPSE"/><div><h2>خوش آمدید، {u.name||'همکار پژوهشکده'}</h2><p>سامانه یکپارچه پیگیری فعالیت‌های پژوهشکده</p></div></div></section>
   </div>
 
   <section className="home-v2-stats" aria-label="خلاصه کارهای من">{[{label:'اولویت امروز',n:counts.today,description:'کارهای مهم و برنامه‌ریزی‌شده',Icon:ClipboardList,tone:'green',href:'/staff?view=overview'},{label:'تصمیم منتظر',n:counts.decisions,description:'در انتظار بررسی و تأیید شما',Icon:ClipboardCheck,tone:'orange',href:'/staff?view=approvals'},{label:'موعدگذشته',n:counts.overdue,description:'نیازمند اقدام و پیگیری',Icon:Clock3,tone:'red',href:'/staff?view=all&scope=mine&filter=overdue'}].map(s=><a href={s.href} key={s.label} className={'home-v2-stat '+s.tone}><span className={'home-v2-icon '+s.tone}><s.Icon size={27}/></span><div><strong>{fa(s.n)}</strong><b>{s.label}</b><small>{s.description}</small></div><ChevronLeft size={18}/></a>)}</section>
