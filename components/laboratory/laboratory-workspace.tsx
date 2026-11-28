@@ -1,5 +1,5 @@
 'use client';
-import {memberResponsibility} from '../../lib/organizational-logins';
+import {memberResponsibility, responsibilityForAccount} from '../../lib/organizational-logins';
 import Link from 'next/link';
 import {useSearchParams} from 'next/navigation';
 import {useState} from 'react';
@@ -19,7 +19,7 @@ export default function LaboratoryWorkspace({initialData}:{initialData:any}){
  const jobs=all.filter(j=>(!area||j.area===area||['مولکولی','پروتئینی'].includes(area)&&j.area==='مولکولی و پروتئینی')&&(!status||j.status===status)&&(!query||[j.work_code,j.service,j.laboratory_name,j.reference,j.client].join(' ').toLowerCase().includes(query.toLowerCase())));
  const execute=job&&!u.sampleOnly&&(coordinator||u.laboratory||u.canExecuteAssigned&&job.assignee===u.email),accepted=job&&job.acceptance==='accepted'&&job.accepted_version===job.work_version;
  const rec=(kind:string,id=selectedId)=>records.filter(r=>r.job_id===id&&r.kind===kind);
- const labName=(id:string)=>labs.find(l=>l.id===id)?.name||'تعیین نشده';const staffName=(id:string)=>data.members.find((m:any)=>m.email===id)?.name||id||'تعیین نشده';
+ const labName=(id:string)=>labs.find(l=>l.id===id)?.name||'تعیین نشده';const staffName=(id:string)=>responsibilityForAccount(id,data.members);
  const recordJob=(r:any)=>all.find(j=>j.id===r.job_id);
  async function reload(){const r=await fetch('/api/laboratories?type='+type,{cache:'no-store'});const d:any=await r.json();if(!r.ok)throw Error(d.error);setData(d);return d}
  async function submit(payload:any){setBusy(true);setError('');try{const r=await fetch('/api/laboratories',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const d:any=await r.json();if(!r.ok)throw Error(d.error);await reload();if(d.credential)setCredential(d.credential);return d}catch(e:any){setError(e.message);return null}finally{setBusy(false)}}

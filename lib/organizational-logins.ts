@@ -12,3 +12,11 @@ export function memberResponsibility(member:{email?:string;id?:string;username?:
  const username=member.username??(id.startsWith('staff:')?id.slice(6):'');
  return responsibilityLabel(member.role_code||member.code||organizationalCode(username)||username);
 }
+
+type ResponsibilityMember = Parameters<typeof memberResponsibility>[0];
+
+export function responsibilityForAccount(id: string, members: readonly ResponsibilityMember[] = []): string {
+ if (!id) return 'بدون مسئول';
+ const member = members.find(candidate => (candidate.email || candidate.id) === id);
+ return memberResponsibility(member ?? { id }) ?? 'در انتظار تعیین مسئولیت';
+}

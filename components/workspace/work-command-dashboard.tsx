@@ -1,4 +1,5 @@
 'use client';
+import {responsibilityForAccount} from '../../lib/organizational-logins';
 import {useMemo,useState} from 'react';
 import Link from 'next/link';
 import {CalendarDays,ClipboardCheck,ShieldCheck,Mail,Layers3,Inbox,Clock3,Hourglass,AlarmClock,UserRoundX,ChevronRight,ChevronLeft,Plus,ArrowUpLeft,Search,Check,CheckCircle2,Play,FileText} from 'lucide-react';
@@ -81,9 +82,7 @@ export default function WorkCommandDashboard({data,today,open,create,manager}:Pr
  const availableProjects=[...new Set(authorized.map(r=>String(r.project||'').trim()).filter(Boolean))].sort();
  const statusRows=(id:string)=>ranked.filter(r=>id==='blocked'?['blocked','review','changes'].includes(r.status):r.status===id);
  const memberLabel=(email:string)=>{
-  if(!email)return 'بدون مسئول';
-  const m=(data.members||[]).find((m:any)=>m.email===email);
-  return m?String(m.name||'').split(' | ')[0]||'مسئول سازمانی':'مسئول ثبت‌شده';
+  return responsibilityForAccount(email,data.members);
  };
  const modules=[
   {id:'mail',label:'مکاتبات داخلی',sub:'مکاتبات بین واحدها و تاریخچه',Icon:Mail},
@@ -119,12 +118,12 @@ export default function WorkCommandDashboard({data,today,open,create,manager}:Pr
     </section>)}</div>
     {!showTaskList&&<button className="wrd-expand-tasks" onClick={()=>setShowTaskList(true)}>مشاهده فهرست آخرین وظایف <ChevronLeft size={15}/></button>}
     {showTaskList&&<div className="wrd-task-list"><div className="wrd-task-list-heading"><strong>{boardStatus?'وظایف: '+(columns.find(c=>c.id===boardStatus)?.label||''):'آخرین وظایف من'}</strong><span>{fa((boardStatus?statusRows(boardStatus):ranked).length)} مورد از حداکثر ۵۰ وظیفه اخیر</span></div>{(boardStatus?statusRows(boardStatus):ranked).slice(0,8).map(r=><button type="button" key={r.id} onClick={()=>open(r)}><span>{r.title}<small>{memberLabel(r.assignee)} · {r.ref||r.id}</small></span><span className={'wrd-task-state wrd-state-'+r.status}>{statuses[r.status]||r.status}</span></button>)}{!ranked.length&&<p className="wrd-empty">برای این فیلتر وظیفه‌ای ثبت نشده است.</p>}<button className="wrd-collapse-tasks" onClick={()=>setShowTaskList(false)}>بستن فهرست</button></div>}
-   </section><WorkCorrespondenceStrip records={authorized} user={data.user} onOpen={open}/></div>
+   </section><WorkCorrespondenceStrip records={authorized} members={data.members} user={data.user} onOpen={open}/></div>
   </div>}
   {section==='plans'&&<div className="wrd-work-grid wrd-plan-view"><MonthCalendar anchor={date} today={today} records={mine} onChange={setDate} onOpen={open} onCreate={d=>create('plan',d)} canCreate={manager}/><section className="wrd-board"><header className="wrd-board-top"><h2><CalendarDays size={23}/> برنامه‌ریزی روزانه و آینده</h2><Link href="/staff?view=plans">برنامه‌ریزی کامل <ArrowUpLeft size={15}/></Link></header><div className="wrd-plan-date">برنامه‌های {jalaliLong(date)}</div>{mine.filter(r=>executionDay(r)===date).map(r=><button className="wrd-plan-item" key={r.id} onClick={()=>open(r)}>{r.title}<small>{statuses[r.status]||r.status}</small></button>)}{!mine.some(r=>executionDay(r)===date)&&<p className="wrd-empty">برنامه‌ای برای تاریخ انتخاب‌شده وجود ندارد.</p>}</section></div>}
   {section==='approvals'&&<section className="wrd-secondary"><header><h2><ShieldCheck/> بررسی و تأیید</h2><Link href="/staff?view=approvals">صفحه کامل تأییدیه‌ها <ArrowUpLeft size={16}/></Link></header><div className="wrd-review-count">در انتظار بررسی شما: <strong>{fa(reviewable.length)}</strong></div>{reviewable.slice(0,50).map(r=><button className="wrd-plan-item" key={r.id} onClick={()=>open(r)}>{r.title}<small>منتظر تصمیم</small></button>)}{!reviewable.length&&<p className="wrd-empty">درخواست منتظر تأییدی برای حساب شما وجود ندارد.</p>}</section>}
   {section==='mail'&&<section className="wrd-secondary"><header><h2><Mail/> مکاتبات داخلی</h2><Link href="/work/mail">دفتر کامل مکاتبات <ArrowUpLeft size={16}/></Link></header><p>مکاتبات و پیوست‌ها از سامانه اصلی با رعایت دسترسی‌ها خوانده می‌شوند.</p><Link className="wrd-mail-link" href="/work/mail">مشاهده دریافتی‌ها، ارسالی‌ها و سابقه گفتگوها</Link></section>}
-  {section!=='tasks'&&<WorkCorrespondenceStrip records={authorized} user={data.user} onOpen={open}/>}
+  {section!=='tasks'&&<WorkCorrespondenceStrip records={authorized} members={data.members} user={data.user} onOpen={open}/>}
   <details className="wrd-responsibilities"><summary><FileText size={16}/> نقش و مسئولیت‌های سازمانی من</summary><MyResponsibilities user={data.user} organization={data.organization}/></details>
   <footer className="wrd-footnote">آمار و محتوا از پرونده‌های واقعی قابل‌دسترسی خوانده می‌شوند. ثبت ایمیل یا تماس به‌تنهایی وظیفه جدید ایجاد نمی‌کند.</footer>
  </div>;

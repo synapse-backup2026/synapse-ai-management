@@ -1,5 +1,5 @@
 'use client';
-import {memberResponsibility} from '../../lib/organizational-logins';
+import {memberResponsibility, responsibilityForAccount} from '../../lib/organizational-logins';
 import {useEffect,useState,useRef} from 'react';
 import Link from 'next/link';
 import {mayAssignWork} from '../../lib/work-assignment-policy';
@@ -27,7 +27,7 @@ function create(kind='task'){if(!data.user.manager){setFeedback('ایجاد و �
 function close(){if(busy)return;setModal('');setFeedback('')}
 async function update(status:string){if(await save({action:'update',id:selected.id,revision:selected.revision,status,result:output,evidenceUrl:evidence,checks,reason}))close()}
 function reviewable(r:any){return data.user.manager||(data.user.role==='reviewer'&&r.reviewer===data.user.email&&r.assignee!==data.user.email)}
-function name(email:string){return data.members.find((m:any)=>m.email===email)?.name||email}
+function name(email:string){return responsibilityForAccount(email,data.members)}
 const choose=(id:string)=>{router.push('/staff?view='+id);setQuery('')};
 if(!data)return <div className="loading"><span className="logo">S</span><h1>SYNAPSE</h1><p>{error||'در حال دریافت فضای کار…'}</p>{error&&<><a className="primary" href="/login">ورود به حساب سازمانی</a><button onClick={load}>تلاش دوباره</button><p className="hint">با نام کاربری و رمز اختصاصی خود وارد شوید.</p></>}</div>;
 const u=data.user,canCreate=!!data.user.manager,all=data.records as any[],active=all.filter(r=>r.status!=='done'),today=day();

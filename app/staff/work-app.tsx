@@ -1,5 +1,5 @@
 'use client';
-import {memberResponsibility} from '../../lib/organizational-logins';
+import {memberResponsibility, responsibilityForAccount} from '../../lib/organizational-logins';
 import WorkFilePreview from '../../components/workspace/work-file-preview';
 import InternalTickets from '../../components/communication/internal-tickets';
 import WorkCommandDashboard from '../../components/workspace/work-command-dashboard';
@@ -20,7 +20,7 @@ export default function WorkApp({initialData}: {initialData:any}){
  const search=useSearchParams(),router=useRouter();const view=titles[search.get('view')||'dashboard']?search.get('view')||'dashboard':'dashboard';
  const [data,setData]=useState(initialData),[error,setError]=useState(''),[busy,setBusy]=useState(false),[today,setToday]=useState(workDayKey()),[f,setF]=useState<any>({scope:search.get('scope')==='all'?'all':'mine',filter:search.get('filter')||'',status:search.get('status')||'',query:''}),[limit,setLimit]=useState(50),[column,setColumn]=useState('todo'),[calendar,setCalendar]=useState('week'),[anchor,setAnchor]=useState(workDayKey()),[approvalTab,setApprovalTab]=useState('pending'),[modal,setModal]=useState(''),[selectedId,setSelectedId]=useState(''),[editorRevision,setEditorRevision]=useState(0),[form,setForm]=useState<any>(defaults(initialData.user)),[report,setReport]=useState<any>({result:'',progress:0,subtasks:[],evidenceUrl:'',reason:'',blockReason:'',nextActor:''}),[message,setMessage]=useState(''),[mentions,setMentions]=useState<string[]>([]),[recipient,setRecipient]=useState(''),[draft,setDraft]=useState(''),[dropTarget,setDropTarget]=useState('');
  const modalRef=useRef<HTMLDivElement>(null),previousFocus=useRef<HTMLElement|null>(null),dirty=useRef(false),reportDirty=useRef(false),loadedIntent=useRef('');const u=data.user;
- const selected=data.records.find((r:any)=>r.id===selectedId);const summary=workSummary(data.records,u,today);const names=(id:string)=>data.members.find((m:any)=>m.email===id)?.name||id;const canCreate=!!u.manager;
+ const selected=data.records.find((r:any)=>r.id===selectedId);const summary=workSummary(data.records,u,today);const names=(id:string)=>responsibilityForAccount(id,data.members);const canCreate=!!u.manager;
  async function load(){try{const res=await fetch('/api/staff',{cache:'no-store'});if(!res.ok)throw Error('دریافت اطلاعات جدید ممکن نشد.');const d:any=await res.json();setData(d);setToday(workDayKey());setError('');return d}catch(e:any){setError(e.message);return null}}
  useEffect(()=>{setData(initialData)},[initialData]);
  useEffect(()=>{const refresh=()=>{if(!document.hidden)void load()};const timer=setInterval(refresh,20000);window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);return()=>{clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh)}},[]);

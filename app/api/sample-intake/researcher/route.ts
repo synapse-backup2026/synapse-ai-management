@@ -1,3 +1,4 @@
+import {workflowMember} from '../../../../lib/workflow-core';
 import {memberResponsibility} from '../../../../lib/organizational-logins';
 import { z } from "zod";
 import { hasDataAccess } from "../../../../lib/auth-policy";
@@ -126,6 +127,14 @@ const indexedStaff = "SELECT m.email AS id, m.name, a.username FROM staff_member
 const activeLabs = "SELECT id, name FROM laboratories WHERE status='active'";
 type Target = { id: string; name: string; username?: string };
 
+async function sampleStaffLabel(staff: Target): Promise<string | undefined> {
+  const label = memberResponsibility(staff);
+  if (!label) return;
+  const member = await workflowMember(staff.id);
+  if (!member || member.laboratory) return;
+  if (canCoordinate(member) || ['sample_intake', 'research_supervision', 'results_ops'].some(permission => hasDataAccess(member, permission))) return label;
+}
+
 async function resolveDestination(value: string) {
   if (!value) return { label: "", person: "", lab: "" };
   if (value === "warehouse" || value === "انبار") return { label: warehouse, person: "", lab: "" };
@@ -135,7 +144,7 @@ async function resolveDestination(value: string) {
   }
   if (value.startsWith("staff:")) {
     const staff = await db().prepare(indexedStaff + " AND m.email=?").bind(value.slice(6)).first<Target>();
-    const label = staff && memberResponsibility(staff);
+    const label = staff && await sampleStaffLabel(staff);
     if (staff && label) return { label, person: staff.id, lab: "" };
   }
   return null;
@@ -159,6 +168,10 @@ export async function GET(request: Request) {
       ? await Promise.all([store.prepare(activeLabs + " ORDER BY name").all<Target>(),
         store.prepare(indexedStaff + " ORDER BY m.name").all<Target>()])
       : [{ results: [] }, { results: [] }];
+    const staffDestinations = await Promise.all(staff.results.map(async member => {
+      const label = await sampleStaffLabel(member);
+      return label ? { group: "مسئولان", key: `staff:${member.id}`, name: label } : null;
+    }));
     return json({
       records: rows.results.map((row) => publicRecord(row, !!user.laboratory)),
       canCreate: canCreate && !referralsOnly, canEdit: isOwner && !referralsOnly,
@@ -166,7 +179,7 @@ export async function GET(request: Request) {
       destinations: [
         { group: "انبار", key: "warehouse", name: warehouse },
         ...labs.results.map((lab) => ({ group: "آزمایشگاه‌ها", key: `lab:${lab.id}`, name: lab.name })),
-        ...staff.results.filter(memberResponsibility).map((member) => ({ group: "مسئولان", key: `staff:${member.id}`, name: memberResponsibility(member)! })),
+        ...staffDestinations.filter(destination => destination !== null),
       ],
     });
   } catch {
