@@ -1,12 +1,12 @@
 import {canFinance} from './finance-policy';
 import {canReadOperationWork} from './operation-work-link';
-import {reconcileDispatch,sweepDispatch} from './dispatch-engine';
 import {organizationalCode} from './organizational-logins';
 import {roleTitle} from './org-role-catalog';
 import {myOrganizationalResponsibilities} from './organizational-data';
 import {db,row} from './staff-server';
 import {visible,OWNER} from './staff-policy';
-export async function readStaffData(u:any){await reconcileDispatch();await sweepDispatch();
+// Dispatch maintenance runs through the integration tick and operations sync.
+export async function readStaffData(u:any){
 const collaborator="EXISTS(SELECT 1 FROM staff_work_details w,json_each(w.details,'$.collaborators') j WHERE w.record_id=r.id AND j.value=?)";
 const clause='r.assignee=? OR r.reviewer=? OR '+collaborator;const args=[u.email,u.email,u.email];
 const records:any[]=[];let offset=0;for(;;){const page=await db().prepare('SELECT r.*,w.details FROM staff_records r LEFT JOIN staff_work_details w ON w.record_id=r.id'+(u.manager?'':' WHERE '+clause)+' ORDER BY r.updated_at DESC,r.id LIMIT 500 OFFSET ?').bind(...(u.manager?[]:args),offset).all();records.push(...page.results.map((r:any)=>({...row(r),...JSON.parse(r.details||'{}')})));if(page.results.length<500)break;offset+=500}

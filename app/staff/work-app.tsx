@@ -23,7 +23,23 @@ export default function WorkApp({initialData}: {initialData:any}){
  const selected=data.records.find((r:any)=>r.id===selectedId);const summary=workSummary(data.records,u,today);const names=(id:string)=>responsibilityForAccount(id,data.members);const canCreate=!!u.manager;
  async function load(){try{const res=await fetch('/api/staff',{cache:'no-store'});if(!res.ok)throw Error('دریافت اطلاعات جدید ممکن نشد.');const d:any=await res.json();setData(d);setToday(workDayKey());setError('');return d}catch(e:any){setError(e.message);return null}}
  useEffect(()=>{setData(initialData)},[initialData]);
- useEffect(()=>{const refresh=()=>{if(!document.hidden)void load()};const timer=setInterval(refresh,20000);window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);return()=>{clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh)}},[]);
+ useEffect(()=>{
+  let refreshing=false;
+  let lastRefresh=Date.now();
+  async function refresh(){
+   if(document.hidden||refreshing||Date.now()-lastRefresh<20000)return;
+   refreshing=true;
+   try{await load()}finally{refreshing=false;lastRefresh=Date.now()}
+  }
+  const timer=setInterval(refresh,20000);
+  window.addEventListener('focus',refresh);
+  document.addEventListener('visibilitychange',refresh);
+  return()=>{
+   clearInterval(timer);
+   window.removeEventListener('focus',refresh);
+   document.removeEventListener('visibilitychange',refresh);
+  };
+ },[]);
  useEffect(()=>{setF((old:any)=>({...old,scope:search.get('scope')==='all'?'all':'mine',filter:search.get('filter')||'',status:search.get('status')||''}));setLimit(50)},[search.toString()]);
  function close(){if(busy)return;if(dirty.current&&!confirm('تغییرات ذخیره‌نشده کنار گذاشته شود؟'))return;dirty.current=false;setModal('');previousFocus.current?.focus()}
  useEffect(()=>{if(!modal)return;previousFocus.current=document.activeElement as HTMLElement;modalRef.current?.querySelector<HTMLElement>('button,input,textarea')?.focus();const listener=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();close()}if(e.key==='Tab'){const items=Array.from(modalRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href]')||[]);if(!items.length)return;const first=items[0],last=items[items.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}};const before=document.body.style.overflow;document.body.style.overflow='hidden';document.addEventListener('keydown',listener);return()=>{document.body.style.overflow=before;document.removeEventListener('keydown',listener)}},[modal,busy]);
